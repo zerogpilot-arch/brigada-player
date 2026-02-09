@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>БРИГАДА: CLOUD TERMINAL</title>
+    <title>БРИГАДА: CLOUD TERMINAL V 1.2</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
@@ -61,6 +61,7 @@
             border: 2px solid white;
             margin-bottom: 20px;
             cursor: pointer;
+            position: relative;
         }
 
         .progress-bar {
@@ -68,6 +69,7 @@
             height: 100%;
             background: var(--hp-green);
             box-shadow: 0 0 10px var(--hp-green);
+            pointer-events: none;
         }
 
         .controls { display: flex; justify-content: space-between; gap: 10px; }
@@ -122,10 +124,10 @@
     <div class="playlist" id="playlist-container"></div>
 
     <script>
-        // --- КОНФИГУРАЦИЯ SUPABASE ---
+        // --- ШАГ 3: ВСТАВЬ СВОИ ДАННЫЕ СЮДА ---
         const SUPABASE_URL = "https://lrggqgwzalqstwjbgbbn.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_gNPjEKC-lYCueII_lnL-HA_gCKV_BFE";
-        // -----------------------------
+        const SUPABASE_KEY = "sb_publishable_gNPjEKC-lYCueII_lnL-HA_gCKV_BFE"; 
+        // --------------------------------------
 
         const tg = window.Telegram.WebApp;
         tg.expand();
@@ -142,9 +144,9 @@
         const artist = document.getElementById('artist');
         const art = document.getElementById('art');
         const progress = document.getElementById('progress');
+        const progressContainer = document.getElementById('progress-container');
         const playlistContainer = document.getElementById('playlist-container');
 
-        // ЗАГРУЗКА ДАННЫХ ИЗ ОБЛАКА
         async function fetchTracks() {
             try {
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/tracks?select=*`, {
@@ -162,7 +164,6 @@
                 }
             } catch (e) {
                 title.innerText = "CONN_ERROR";
-                console.error(e);
             }
         }
 
@@ -171,8 +172,14 @@
             tracks.forEach((track, index) => {
                 const item = document.createElement('div');
                 item.className = 'playlist-item';
-                item.innerHTML = `[0${index+1}] ${track.title}`;
-                item.onclick = () => { currentTrackIndex = index; loadTrack(index); audio.play(); isPlaying = true; playBtn.innerText = 'STOP'; };
+                item.innerHTML = `<span>[0${index+1}]</span> ${track.title}`;
+                item.onclick = () => {
+                    currentTrackIndex = index;
+                    loadTrack(index);
+                    audio.play();
+                    isPlaying = true;
+                    playBtn.innerText = 'STOP';
+                };
                 playlistContainer.appendChild(item);
             });
         }
@@ -182,13 +189,27 @@
             title.innerText = track.title;
             artist.innerText = track.artist;
             audio.src = track.audio_url;
-            const img = (track.image_url && track.image_url !== "NULL") ? track.image_url : defaultImg;
-            art.style.backgroundImage = `url('${img}')`;
+            
+            // ЛОГИКА ПОСТЕРА
+            if (track.image_url && track.image_url !== "NULL" && track.image_url.trim() !== "") {
+                art.style.backgroundImage = `url('${track.image_url}')`;
+            } else {
+                art.style.backgroundImage = `url('${defaultImg}')`;
+            }
             
             document.querySelectorAll('.playlist-item').forEach((item, i) => {
                 item.classList.toggle('active', i === index);
             });
         }
+
+        // ИСПРАВЛЕННАЯ ПЕРЕМОТКА
+        progressContainer.addEventListener('click', (e) => {
+            if (!audio.duration) return;
+            const rect = progressContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const width = rect.width;
+            audio.currentTime = (x / width) * audio.duration;
+        });
 
         playBtn.onclick = () => {
             if (isPlaying) { audio.pause(); playBtn.innerText = 'START'; }
@@ -197,11 +218,24 @@
         };
 
         audio.ontimeupdate = () => {
-            if (audio.duration) progress.style.width = (audio.currentTime / audio.duration) * 100 + '%';
+            if (audio.duration) {
+                progress.style.width = (audio.currentTime / audio.duration) * 100 + '%';
+            }
         };
 
-        document.getElementById('next').onclick = () => { currentTrackIndex = (currentTrackIndex + 1) % tracks.length; loadTrack(currentTrackIndex); if(isPlaying) audio.play(); };
-        document.getElementById('prev').onclick = () => { currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length; loadTrack(currentTrackIndex); if(isPlaying) audio.play(); };
+        audio.onended = () => { document.getElementById('next').click(); };
+
+        document.getElementById('next').onclick = () => {
+            currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+            loadTrack(currentTrackIndex);
+            if(isPlaying) audio.play();
+        };
+
+        document.getElementById('prev').onclick = () => {
+            currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+            loadTrack(currentTrackIndex);
+            if(isPlaying) audio.play();
+        };
 
         fetchTracks();
     </script>
