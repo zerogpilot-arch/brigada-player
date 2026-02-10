@@ -1,282 +1,834 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>БРИГАДА: CLOUD TERMINAL v2.1</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --explosive-orange: #ff8a00;
-            --neon-cyan: #00f0ff;
-            --hp-green: #39ff14;
-            --bg-dark: #0a0a0a;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>БРИГАДА: CLOUD PLAYER v2.1</title>
 
-        body {
-            background-color: var(--bg-dark);
-            color: white;
-            font-family: 'Press Start 2P', cursive;
-            margin: 0; padding: 20px;
-            display: flex; flex-direction: column; align-items: center;
-            text-transform: uppercase;
-        }
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-        /* МЕРЦАНИЕ ТОЛЬКО ДЛЯ ОБЛОЖКИ */
-        @keyframes artFlicker {
-            0% { opacity: 0.98; } 5% { opacity: 0.95; } 10% { opacity: 0.99; } 50% { opacity: 1; } 100% { opacity: 0.98; }
-        }
+  <style>
+    :root{
+      --explosive-orange:#ff8a00;
+      --neon-cyan:#00f0ff;
+      --hp-green:#39ff14;
+      --bg-dark:#06060a;
 
-        .player-card {
-            border: 4px solid white;
-            box-shadow: 8px 8px 0px var(--explosive-orange);
-            background: rgba(0, 0, 0, 0.95);
-            padding: 20px; width: 100%; max-width: 340px; box-sizing: border-box;
-        }
+      --glass: rgba(255,255,255,.08);
+      --glass2: rgba(255,255,255,.12);
+      --stroke: rgba(255,255,255,.14);
 
-        .album-art {
-            width: 100%; height: 250px;
-            border: 4px solid var(--neon-cyan);
-            margin-bottom: 20px;
-            background-color: #000; background-size: contain; background-position: center;
-            background-repeat: no-repeat;
-            position: relative; overflow: hidden;
-            animation: artFlicker 0.2s infinite;
-        }
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.65);
+      --muted2: rgba(255,255,255,.45);
 
-        .track-info h2 { font-size: 10px; color: var(--neon-cyan); margin: 10px 0; line-height: 1.4; height: 30px; }
-        .track-info p { font-size: 7px; color: var(--explosive-orange); margin-bottom: 20px; }
-        
-        .stats { font-size: 6px; color: #555; text-align: right; margin-bottom: 5px; }
+      --shadow: 0 22px 70px rgba(0,0,0,.45);
+      --radius: 26px;
 
-        .progress-container {
-            width: 100%; height: 16px; background: #222; border: 2px solid white;
-            margin-bottom: 20px; cursor: pointer; position: relative;
-        }
-        .progress-bar { width: 0%; height: 100%; background: var(--hp-green); pointer-events: none; }
-        
-        .controls { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-        .btn {
-            background: white; border: none; padding: 10px; font-family: 'Press Start 2P', cursive;
-            cursor: pointer; font-size: 9px; flex: 1; box-shadow: 4px 4px 0px #555;
-        }
-        .btn:active { box-shadow: 0px 0px 0px; transform: translate(2px, 2px); }
-        .btn-play { background: var(--explosive-orange); color: white; flex: 2; }
-        .btn-shuffle { background: #333; color: white; font-size: 7px; }
-        .btn-shuffle.active { background: var(--neon-cyan); color: black; }
+      --safeTop: env(safe-area-inset-top);
+      --safeBottom: env(safe-area-inset-bottom);
+    }
 
-        /* ПОИСК */
-        .search-box {
-            width: 100%; max-width: 340px; margin-top: 20px;
-            background: #111; border: 2px solid #333;
-            padding: 10px; font-family: 'Press Start 2P', cursive;
-            color: var(--neon-cyan); font-size: 8px; outline: none;
-            box-sizing: border-box;
-        }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      background: var(--bg-dark);
+      color: var(--text);
+      overflow:hidden;
+      font-family: 'Press Start 2P', cursive;
+      text-transform: uppercase;
+    }
 
-        .playlist { width: 100%; max-width: 340px; margin-top: 15px; }
-        .playlist-item {
-            font-size: 7px; padding: 12px; border: 2px solid #333; margin-bottom: 8px;
-            background: #111; cursor: pointer;
-        }
-        .playlist-item.active { border-color: var(--hp-green); color: var(--hp-green); }
-    </style>
+    /* Animated cyber background */
+    .bg{
+      position:fixed; inset:0;
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(0,240,255,.22), transparent 55%),
+        radial-gradient(1000px 700px at 85% 25%, rgba(255,138,0,.18), transparent 55%),
+        radial-gradient(900px 650px at 55% 92%, rgba(57,255,20,.12), transparent 60%),
+        linear-gradient(180deg, #04040a, #070716 55%, #04040a);
+      filter:saturate(1.1);
+    }
+    .bg::after{
+      content:"";
+      position:absolute; inset:-40%;
+      background: conic-gradient(from 210deg,
+        rgba(0,240,255,.18),
+        rgba(255,138,0,.14),
+        rgba(57,255,20,.12),
+        rgba(0,240,255,.18));
+      animation: spin 18s linear infinite;
+      filter: blur(90px);
+      opacity:.75;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+
+    /* Backdrop from cover */
+    .backdrop{
+      position:fixed; inset:0;
+      background-size: cover;
+      background-position:center;
+      filter: blur(42px) saturate(1.2) brightness(.55);
+      transform: scale(1.18);
+      opacity:0;
+      transition: opacity .35s ease;
+    }
+    .backdrop.on{ opacity: .95; }
+
+    .veil{
+      position:fixed; inset:0;
+      background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.70) 55%, rgba(0,0,0,.82));
+      pointer-events:none;
+    }
+
+    /* App layout */
+    .app{
+      position:relative;
+      height:100%;
+      padding: calc(var(--safeTop) + 14px) 16px calc(var(--safeBottom) + 14px);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    /* Top bar */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      min-height: 44px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--explosive-orange));
+      box-shadow: 0 0 22px rgba(0,240,255,.35);
+      flex:0 0 auto;
+    }
+    .brand .t1{
+      font-size:10px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      letter-spacing:.6px;
+    }
+    .brand .t2{
+      margin-top:4px;
+      font-size:7px;
+      color: var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      letter-spacing:.4px;
+    }
+
+    .pill{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 10px 28px rgba(0,0,0,.22);
+      user-select:none;
+      cursor:pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pill span{ font-size:7px; color: var(--muted); }
+    .pill strong{ font-size:8px; letter-spacing:.6px; }
+
+    /* Main card */
+    .card{
+      flex:1 1 auto;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      padding: 14px;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+      min-height:0;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(800px 300px at 20% 20%, rgba(0,240,255,.18), transparent 60%),
+        radial-gradient(900px 400px at 80% 0%, rgba(255,138,0,.14), transparent 55%),
+        radial-gradient(700px 380px at 60% 90%, rgba(57,255,20,.10), transparent 55%);
+      pointer-events:none;
+    }
+
+    .now{
+      position:relative; z-index:1;
+      display:grid;
+      grid-template-columns: 120px 1fr;
+      gap:12px;
+      align-items:center;
+    }
+
+    /* Album art flicker (old vibe) */
+    @keyframes artFlicker {
+      0% { opacity: 0.98; }
+      5% { opacity: 0.95; }
+      10% { opacity: 0.99; }
+      50% { opacity: 1; }
+      100% { opacity: 0.98; }
+    }
+
+    .artWrap{
+      width:120px; height:120px;
+      border-radius: 22px;
+      overflow:hidden;
+      border: 2px solid rgba(0,240,255,.65);
+      background: rgba(0,0,0,.45);
+      box-shadow: 0 18px 55px rgba(0,0,0,.35);
+      position:relative;
+      animation: artFlicker .22s infinite;
+      transform: translateZ(0);
+    }
+    .artWrap::after{
+      content:"LIVE";
+      position:absolute; top:8px; right:8px;
+      font-size:7px;
+      padding:6px 8px;
+      border-radius: 999px;
+      background: rgba(255,0,0,.85);
+      border:1px solid rgba(255,255,255,.2);
+      box-shadow: 0 10px 28px rgba(0,0,0,.35);
+    }
+    .artImg{
+      width:100%; height:100%;
+      object-fit: cover;
+      display:block;
+      transform: scale(1.03);
+    }
+
+    .meta{ min-width:0; }
+    .title{
+      margin:0;
+      font-size:10px;
+      line-height:1.35;
+      color: var(--neon-cyan);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .artist{
+      margin-top:8px;
+      font-size:7px;
+      color: var(--explosive-orange);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .statsRow{
+      position:relative; z-index:1;
+      display:flex; justify-content:space-between; gap:10px;
+      margin-top:2px;
+      color: var(--muted2);
+      font-size:7px;
+    }
+
+    /* Progress */
+    .progressWrap{
+      position:relative; z-index:1;
+      margin-top: 2px;
+    }
+    .progressContainer{
+      width:100%;
+      height:14px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius:999px;
+      overflow:hidden;
+      cursor:pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .progressBar{
+      width:0%;
+      height:100%;
+      background: linear-gradient(90deg, var(--hp-green), var(--neon-cyan), var(--explosive-orange));
+      box-shadow: 0 0 18px rgba(57,255,20,.25);
+      transition: width .08s linear;
+    }
+
+    /* Controls */
+    .controls{
+      position:relative; z-index:1;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-top: 2px;
+    }
+    .btn{
+      flex:1;
+      border:none;
+      border-radius: 18px;
+      padding: 12px 10px;
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 10px 28px rgba(0,0,0,.22);
+      color: var(--text);
+      font-family: 'Press Start 2P', cursive;
+      font-size:10px;
+    }
+    .btn:active{ transform: translateY(1px); }
+
+    .btnPlay{
+      flex:2;
+      background: rgba(255,138,0,.18);
+      border: 1px solid rgba(255,138,0,.45);
+      color: #fff;
+    }
+
+    .toggles{
+      position:relative; z-index:1;
+      display:flex;
+      gap:10px;
+      margin-top: 0px;
+    }
+    .toggle{
+      flex:1;
+      padding: 10px 10px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--muted);
+      font-size:8px;
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Press Start 2P', cursive;
+    }
+    .toggle.on{
+      background: rgba(0,240,255,.18);
+      border-color: rgba(0,240,255,.45);
+      color: rgba(255,255,255,.92);
+    }
+
+    /* Search + playlist */
+    .searchBox{
+      position:relative; z-index:1;
+      width:100%;
+      padding: 12px 12px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--neon-cyan);
+      font-size:8px;
+      outline:none;
+      font-family: 'Press Start 2P', cursive;
+      margin-top: 2px;
+    }
+    .searchBox::placeholder{ color: rgba(0,240,255,.35); }
+
+    .list{
+      position:relative; z-index:1;
+      min-height:0;
+      overflow:auto;
+      padding-right: 6px;
+      margin-right: -6px;
+      margin-top: 2px;
+    }
+    .list::-webkit-scrollbar{ width:6px; }
+    .list::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.14); border-radius:999px; }
+
+    .item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding: 12px 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+      margin-bottom:10px;
+    }
+    .item.active{
+      border-color: rgba(57,255,20,.55);
+      box-shadow: 0 18px 55px rgba(57,255,20,.10);
+      background: rgba(57,255,20,.06);
+    }
+    .itemLeft{ min-width:0; }
+    .itemTitle{
+      margin:0;
+      font-size:8px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      color: rgba(255,255,255,.92);
+    }
+    .itemArtist{
+      margin-top:6px;
+      font-size:7px;
+      color: var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .badge{
+      font-size:7px;
+      color: rgba(255,255,255,.78);
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      flex:0 0 auto;
+    }
+  </style>
 </head>
+
 <body>
+  <div class="bg"></div>
+  <div class="backdrop" id="backdrop"></div>
+  <div class="veil"></div>
 
-    <div style="font-size: 8px; margin-bottom: 20px; text-shadow: 2px 2px red;">BRIGADA_CLOUD_v2.1</div>
-
-    <div class="player-card">
-        <div class="album-art" id="art"></div>
-        <div class="stats" id="play-count">PLAYS: 0</div>
-        
-        <div class="track-info">
-            <h2 id="title">TERMINAL_READY</h2>
-            <p id="artist">SELECT_TRACK</p>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <div class="dot"></div>
+        <div style="min-width:0">
+          <div class="t1">BRIGADA_CLOUD_v2.1</div>
+          <div class="t2" id="status">CONNECTING...</div>
         </div>
+      </div>
 
-        <div class="progress-container" id="progress-container">
-            <div class="progress-bar" id="progress"></div>
-        </div>
-
-        <div class="controls">
-            <button class="btn" id="prev"><</button>
-            <button class="btn btn-play" id="play">START</button>
-            <button class="btn" id="next">></button>
-        </div>
-        <button class="btn btn-shuffle" id="shuffle">SHUFFLE: OFF</button>
+      <div class="pill" id="refreshBtn" title="Обновить библиотеку">
+        <span>TRACKS</span>
+        <strong id="count">0</strong>
+      </div>
     </div>
 
-    <input type="text" class="search-box" id="search" placeholder="SEARCH_TRACK...">
+    <div class="card">
+      <div class="now">
+        <div class="artWrap" id="artWrap">
+          <img class="artImg" id="artImg" src="poster.jpg" alt="cover" />
+        </div>
 
-    <div class="playlist" id="playlist-container"></div>
+        <div class="meta">
+          <h2 class="title" id="title">TERMINAL_READY</h2>
+          <div class="artist" id="artist">SELECT_TRACK</div>
+          <div class="statsRow">
+            <div id="timeCur">0:00</div>
+            <div id="playCount">PLAYS: 0</div>
+            <div id="timeDur">0:00</div>
+          </div>
+        </div>
+      </div>
 
-    <script>
-        // --- КОНФИГУРАЦИЯ ---
-        const SUPABASE_URL = "https://lrggqgwzalqstwjbgbbn.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_gNPjEKC-lYCueII_lnL-HA_gCKV_BFE";
-        // --------------------
+      <div class="progressWrap">
+        <div class="progressContainer" id="progressContainer">
+          <div class="progressBar" id="progressBar"></div>
+        </div>
+      </div>
 
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+      <div class="controls">
+        <button class="btn" id="prev">&lt;</button>
+        <button class="btn btnPlay" id="play">START</button>
+        <button class="btn" id="next">&gt;</button>
+      </div>
 
-        const audio = new Audio();
-        audio.crossOrigin = "anonymous"; 
-        
-        let tracks = [];
-        let filteredTracks = [];
-        let currentTrackIndex = 0;
-        let isShuffle = false;
-        const defaultImg = "poster.jpg";
+      <div class="toggles">
+        <button class="toggle" id="shuffle">SHUFFLE: OFF</button>
+        <button class="toggle" id="repeat">REPEAT: OFF</button>
+      </div>
 
-        const playBtn = document.getElementById('play');
-        const shuffleBtn = document.getElementById('shuffle');
-        const title = document.getElementById('title');
-        const artist = document.getElementById('artist');
-        const art = document.getElementById('art');
-        const progress = document.getElementById('progress');
-        const playlistContainer = document.getElementById('playlist-container');
-        const searchInput = document.getElementById('search');
+      <input class="searchBox" id="search" placeholder="SEARCH_TRACK..." />
 
-        async function fetchTracks() {
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/tracks?select=*&order=id.asc`, {
-                    headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
-                });
-                tracks = await response.json();
-                filteredTracks = tracks;
-                if (tracks.length > 0) { renderPlaylist(); loadTrack(0); }
-            } catch (e) { title.innerText = "CONN_ERROR"; }
-        }
+      <div class="list" id="playlist"></div>
+    </div>
+  </div>
 
-        function renderPlaylist() {
-            playlistContainer.innerHTML = '';
-            filteredTracks.forEach((track, index) => {
-                const item = document.createElement('div');
-                item.className = 'playlist-item';
-                // Находим оригинальный индекс в основном массиве
-                const realIndex = tracks.findIndex(t => t.id === track.id);
-                item.innerHTML = `[0${realIndex+1}] ${track.title}`;
-                item.onclick = () => { 
-                    currentTrackIndex = realIndex;
-                    loadTrack(realIndex); 
-                    playAudio();
-                };
-                playlistContainer.appendChild(item);
-            });
-        }
+  <script>
+    // =========================
+    // КОНФИГУРАЦИЯ (ФРОНТ)
+    // =========================
+    const SUPABASE_URL = "https://lrggqgwzalqstwjbgbbn.supabase.co";
+    // ВАЖНО: сюда ТОЛЬКО публичный ключ (anon/publishable). Service role сюда НЕЛЬЗЯ.
+    const SUPABASE_KEY = "sb_publishable_gNPjEKC-lYCueII_lnL-HA_gCKV_BFE";
+    // =========================
 
-        // Поиск
-        searchInput.oninput = (e) => {
-            const val = e.target.value.toLowerCase();
-            filteredTracks = tracks.filter(t => 
-                t.title.toLowerCase().includes(val) || t.artist.toLowerCase().includes(val)
-            );
-            renderPlaylist();
-        };
+    const tg = window.Telegram?.WebApp;
+    try { tg?.expand(); tg?.ready(); } catch(e){}
 
-        // Перемешивание
-        shuffleBtn.onclick = () => {
-            isShuffle = !isShuffle;
-            shuffleBtn.innerText = isShuffle ? "SHUFFLE: ON" : "SHUFFLE: OFF";
-            shuffleBtn.classList.toggle('active', isShuffle);
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-        };
+    const audio = new Audio();
+    audio.crossOrigin = "anonymous";
 
-        function loadTrack(index) {
-            const track = tracks[index];
-            if (!track) return;
-            title.innerText = track.title;
-            artist.innerText = track.artist;
-            audio.src = track.audio_url;
-            document.getElementById('play-count').innerText = `PLAYS: ${track.plays || 0}`;
-            
-            art.style.backgroundImage = `url('${defaultImg}')`;
+    // State
+    let tracks = [];
+    let filteredTracks = [];
+    let currentTrackIndex = 0;
+    let isShuffle = false;
+    let isRepeat = false;
+    let isPlaying = false;
 
-            if (track.image_url && track.image_url !== "NULL" && track.image_url.trim() !== "") {
-                art.style.backgroundImage = `url('${track.image_url}')`;
-            } else {
-                new jsmediatags.Reader(track.audio_url).read({
-                    onSuccess: function(tag) {
-                        const image = tag.tags.picture;
-                        if (image) {
-                            let base64String = "";
-                            for (let i = 0; i < image.data.length; i++) base64String += String.fromCharCode(image.data[i]);
-                            art.style.backgroundImage = `url('data:${image.format};base64,${window.btoa(base64String)}')`;
-                        }
-                    }
-                });
+    // Чтобы не спамить plays: инкрементим 1 раз на старт трека
+    let lastPlaysTrackId = null;
+
+    const defaultImg = "poster.jpg";
+
+    // UI
+    const elStatus = document.getElementById("status");
+    const elCount = document.getElementById("count");
+    const elTitle = document.getElementById("title");
+    const elArtist = document.getElementById("artist");
+    const elPlayCount = document.getElementById("playCount");
+    const elTimeCur = document.getElementById("timeCur");
+    const elTimeDur = document.getElementById("timeDur");
+
+    const elArtImg = document.getElementById("artImg");
+    const elBackdrop = document.getElementById("backdrop");
+
+    const elPlaylist = document.getElementById("playlist");
+    const elSearch = document.getElementById("search");
+
+    const btnPrev = document.getElementById("prev");
+    const btnPlay = document.getElementById("play");
+    const btnNext = document.getElementById("next");
+
+    const btnShuffle = document.getElementById("shuffle");
+    const btnRepeat = document.getElementById("repeat");
+    const btnRefresh = document.getElementById("refreshBtn");
+
+    const elProgressContainer = document.getElementById("progressContainer");
+    const elProgressBar = document.getElementById("progressBar");
+
+    function haptic(type="medium"){
+      try { tg?.HapticFeedback?.impactOccurred(type); } catch(e){}
+    }
+
+    function formatTime(sec){
+      if (!isFinite(sec)) return "0:00";
+      sec = Math.max(0, Math.floor(sec));
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m}:${String(s).padStart(2,"0")}`;
+    }
+
+    function setArt(url){
+      const finalUrl = (url && String(url).trim()) ? url : defaultImg;
+      elArtImg.src = finalUrl;
+
+      if (finalUrl !== defaultImg){
+        elBackdrop.style.backgroundImage = `url('${finalUrl}')`;
+        elBackdrop.classList.add("on");
+      } else {
+        elBackdrop.classList.remove("on");
+      }
+    }
+
+    function tryReadCoverFromMp3(audioUrl){
+      // Может не сработать из-за CORS — это нормально.
+      try{
+        new window.jsmediatags.Reader(audioUrl).read({
+          onSuccess: function(tag){
+            const image = tag?.tags?.picture;
+            if (!image) return;
+
+            let base64String = "";
+            for (let i=0; i<image.data.length; i++){
+              base64String += String.fromCharCode(image.data[i]);
             }
-            updateActiveItem();
-        }
+            const dataUrl = `data:${image.format};base64,${window.btoa(base64String)}`;
+            setArt(dataUrl);
+          },
+          onError: function(){ /* ignore */ }
+        });
+      } catch(e){ /* ignore */ }
+    }
 
-        function updateActiveItem() {
-            document.querySelectorAll('.playlist-item').forEach((item) => {
-                const trackTitle = tracks[currentTrackIndex].title;
-                item.classList.toggle('active', item.innerText.includes(trackTitle));
-            });
-        }
+    async function fetchTracks(){
+      elStatus.textContent = "LOADING_TRACKS...";
+      try{
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/tracks?select=*&order=id.asc`, {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
+          }
+        });
 
-        async function updatePlayCount(track) {
-            const newCount = (track.plays || 0) + 1;
-            fetch(`${SUPABASE_URL}/rest/v1/tracks?id=eq.${track.id}`, {
-                method: 'PATCH',
-                headers: { 
-                    "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ plays: newCount })
-            });
-        }
+        if (!response.ok) throw new Error("REST_ERROR_" + response.status);
 
-        function playAudio() {
-            audio.play();
-            playBtn.innerText = 'STOP';
-            updatePlayCount(tracks[currentTrackIndex]);
-        }
+        tracks = await response.json();
+        filteredTracks = tracks;
 
-        function stopAudio() {
-            audio.pause();
-            playBtn.innerText = 'START';
-        }
+        elCount.textContent = String(tracks.length);
+        elStatus.textContent = tracks.length ? "READY" : "EMPTY_LIBRARY";
 
-        playBtn.onclick = () => {
-            if (audio.paused) playAudio(); else stopAudio();
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        renderPlaylist();
+
+        if (tracks.length > 0){
+          loadTrack(0, { autoplay: false });
+        } else {
+          elTitle.textContent = "NO_TRACKS";
+          elArtist.textContent = "UPLOAD_MP3_TO_STORAGE";
+          elPlayCount.textContent = "PLAYS: 0";
+          setArt(defaultImg);
+        }
+      } catch(e){
+        elStatus.textContent = "CONN_ERROR";
+        elTitle.textContent = "CONN_ERROR";
+        elArtist.textContent = "CHECK_KEY_OR_RLS";
+      }
+    }
+
+    function renderPlaylist(){
+      elPlaylist.innerHTML = "";
+
+      filteredTracks.forEach((track) => {
+        const realIndex = tracks.findIndex(t => t.id === track.id);
+        if (realIndex < 0) return;
+
+        const item = document.createElement("div");
+        item.className = "item";
+        item.dataset.index = String(realIndex);
+
+        const left = document.createElement("div");
+        left.className = "itemLeft";
+
+        const t = document.createElement("p");
+        t.className = "itemTitle";
+        t.textContent = `[${String(realIndex+1).padStart(2,"0")}] ${track.title || "UNTITLED"}`;
+
+        const a = document.createElement("div");
+        a.className = "itemArtist";
+        a.textContent = track.artist || "UNKNOWN_ARTIST";
+
+        left.appendChild(t);
+        left.appendChild(a);
+
+        const badge = document.createElement("div");
+        badge.className = "badge";
+        badge.textContent = `PLAYS:${track.plays || 0}`;
+
+        item.appendChild(left);
+        item.appendChild(badge);
+
+        item.onclick = () => {
+          currentTrackIndex = realIndex;
+          loadTrack(realIndex, { autoplay: true });
+          haptic("medium");
         };
 
-        audio.ontimeupdate = () => {
-            if (audio.duration) progress.style.width = (audio.currentTime / audio.duration) * 100 + '%';
-        };
+        elPlaylist.appendChild(item);
+      });
 
-        // Логика переключения
-        function nextTrack() {
-            if (isShuffle) {
-                currentTrackIndex = Math.floor(Math.random() * tracks.length);
-            } else {
-                currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
-            }
-            loadTrack(currentTrackIndex);
-            playAudio();
+      updateActiveItem();
+    }
+
+    function updateActiveItem(){
+      const items = elPlaylist.querySelectorAll(".item");
+      items.forEach((item) => {
+        const i = Number(item.dataset.index);
+        item.classList.toggle("active", i === currentTrackIndex);
+      });
+    }
+
+    function setPlayBtn(){
+      btnPlay.textContent = audio.paused ? "START" : "STOP";
+    }
+
+    function loadTrack(index, { autoplay=false } = {}){
+      const track = tracks[index];
+      if (!track) return;
+
+      elTitle.textContent = track.title || "UNTITLED";
+      elArtist.textContent = track.artist || "UNKNOWN_ARTIST";
+      elPlayCount.textContent = `PLAYS: ${track.plays || 0}`;
+
+      audio.src = track.audio_url;
+      audio.loop = isRepeat;
+
+      // Сброс защиты plays для нового трека
+      lastPlaysTrackId = null;
+
+      // Обложка
+      setArt(defaultImg);
+
+      if (track.image_url && track.image_url !== "NULL" && track.image_url.trim() !== ""){
+        setArt(track.image_url);
+      } else {
+        // пробуем вытащить ID3 cover
+        tryReadCoverFromMp3(track.audio_url);
+      }
+
+      updateActiveItem();
+      setPlayBtn();
+
+      if (autoplay){
+        playAudio();
+      }
+    }
+
+    async function updatePlayCount(track){
+      const newCount = (track.plays || 0) + 1;
+      track.plays = newCount;
+
+      elPlayCount.textContent = `PLAYS: ${newCount}`;
+
+      // обновим бейдж в списке
+      const item = elPlaylist.querySelector(`.item[data-index="${currentTrackIndex}"] .badge`);
+      if (item) item.textContent = `PLAYS:${newCount}`;
+
+      // PATCH в базу
+      try{
+        await fetch(`${SUPABASE_URL}/rest/v1/tracks?id=eq.${track.id}`, {
+          method: "PATCH",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ plays: newCount })
+        });
+      } catch(e){
+        // ignore
+      }
+    }
+
+    async function playAudio(){
+      const track = tracks[currentTrackIndex];
+      if (!track) return;
+
+      try{
+        await audio.play();
+        isPlaying = true;
+        setPlayBtn();
+
+        // plays инкрементим 1 раз на запуск текущего трека
+        if (lastPlaysTrackId !== track.id){
+          lastPlaysTrackId = track.id;
+          updatePlayCount(track);
         }
+      } catch(e){
+        // Автовоспроизведение может блокироваться — пользователь нажмёт ещё раз
+        isPlaying = false;
+        setPlayBtn();
+      }
+    }
 
-        audio.onended = nextTrack;
-        document.getElementById('next').onclick = nextTrack;
-        
-        document.getElementById('prev').onclick = () => {
-            currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
-            loadTrack(currentTrackIndex);
-            playAudio();
-        };
+    function stopAudio(){
+      audio.pause();
+      isPlaying = false;
+      setPlayBtn();
+    }
 
-        document.getElementById('progress-container').onclick = (e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
-        };
+    function nextTrack(){
+      if (!tracks.length) return;
 
-        fetchTracks();
-    </script>
+      if (isShuffle){
+        currentTrackIndex = Math.floor(Math.random() * tracks.length);
+      } else {
+        currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+      }
+
+      loadTrack(currentTrackIndex, { autoplay: isPlaying }); // если был стоп — не стартуем
+    }
+
+    function prevTrack(){
+      if (!tracks.length) return;
+
+      currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+      loadTrack(currentTrackIndex, { autoplay: isPlaying });
+    }
+
+    // UI handlers
+    btnPlay.onclick = () => {
+      if (audio.paused) playAudio(); else stopAudio();
+      haptic("medium");
+    };
+
+    btnNext.onclick = () => { nextTrack(); haptic("light"); };
+    btnPrev.onclick = () => { prevTrack(); haptic("light"); };
+
+    btnShuffle.onclick = () => {
+      isShuffle = !isShuffle;
+      btnShuffle.textContent = isShuffle ? "SHUFFLE: ON" : "SHUFFLE: OFF";
+      btnShuffle.classList.toggle("on", isShuffle);
+      haptic("light");
+    };
+
+    btnRepeat.onclick = () => {
+      isRepeat = !isRepeat;
+      btnRepeat.textContent = isRepeat ? "REPEAT: ON" : "REPEAT: OFF";
+      btnRepeat.classList.toggle("on", isRepeat);
+      audio.loop = isRepeat;
+      haptic("light");
+    };
+
+    btnRefresh.onclick = () => {
+      haptic("light");
+      fetchTracks();
+    };
+
+    // Search
+    elSearch.oninput = (e) => {
+      const val = (e.target.value || "").toLowerCase().trim();
+      if (!val){
+        filteredTracks = tracks;
+      } else {
+        filteredTracks = tracks.filter(t =>
+          String(t.title || "").toLowerCase().includes(val) ||
+          String(t.artist || "").toLowerCase().includes(val)
+        );
+      }
+      renderPlaylist();
+    };
+
+    // Progress
+    audio.ontimeupdate = () => {
+      if (!audio.duration) return;
+      const pct = (audio.currentTime / audio.duration) * 100;
+      elProgressBar.style.width = pct + "%";
+      elTimeCur.textContent = formatTime(audio.currentTime);
+      elTimeDur.textContent = formatTime(audio.duration);
+    };
+
+    audio.onended = () => {
+      if (!isRepeat){
+        nextTrack();
+        // если играло — продолжаем
+        if (isPlaying) playAudio();
+      }
+    };
+
+    elProgressContainer.onclick = (e) => {
+      if (!audio.duration) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = Math.min(Math.max(0, e.clientX - rect.left), rect.width);
+      audio.currentTime = (x / rect.width) * audio.duration;
+      haptic("light");
+    };
+
+    // Init
+    fetchTracks();
+  </script>
 </body>
 </html>
