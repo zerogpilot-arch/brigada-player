@@ -11,31 +11,28 @@
 
   <style>
     :root{
-      --bg:#05060a;
+      --bgTop:#05060a;
+
+      /* Эти цвета будут подхватываться из обложки */
+      --c1:#1b66ff;
+      --c2:#74b7ff;
+      --c3:#bfe0ff;
+
       --text:rgba(255,255,255,.92);
-      --muted:rgba(255,255,255,.60);
-      --muted2:rgba(255,255,255,.42);
-
-      /* динамика из обложки */
-      --c1:#00f0ff;
-      --c2:#ff8a00;
-      --c3:#39ff14;
-
-      --glass: rgba(255,255,255,.08);
-      --stroke: rgba(255,255,255,.14);
-
-      --r1:26px;
-      --r2:18px;
+      --muted:rgba(255,255,255,.55);
 
       --safeTop: env(safe-area-inset-top);
       --safeBottom: env(safe-area-inset-bottom);
+
+      /* где граница (0..1). 0.66 = 2/3 сверху */
+      --split: 0.66;
     }
 
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
     body{
       margin:0;
-      background: var(--bg);
+      background: var(--bgTop);
       color: var(--text);
       overflow:hidden;
       font-family:'Press Start 2P', cursive;
@@ -43,320 +40,200 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* общий фон */
-    .bgCover{
+    /* ЕДИНЫЙ ФОН НА ВЕСЬ ЭКРАН */
+    .scene{
       position:fixed; inset:0;
       background:
-        radial-gradient(1200px 800px at 20% 0%, color-mix(in srgb, var(--c1) 25%, transparent), transparent 60%),
-        radial-gradient(1000px 700px at 85% 20%, color-mix(in srgb, var(--c2) 22%, transparent), transparent 55%),
-        radial-gradient(900px 650px at 50% 92%, color-mix(in srgb, var(--c3) 14%, transparent), transparent 60%),
-        linear-gradient(180deg, #04040a, #070717 55%, #04040a);
-      filter: saturate(1.12);
+        linear-gradient(180deg,
+          rgba(0,0,0,0.92) 0%,
+          rgba(0,0,0,0.92) calc(var(--split) * 100% - 8%),
+          rgba(0,0,0,0.20) calc(var(--split) * 100% + 5%),
+          rgba(0,0,0,0.12) 100%),
+        radial-gradient(1200px 900px at 50% 100%,
+          color-mix(in srgb, var(--c1) 80%, transparent),
+          transparent 60%),
+        radial-gradient(900px 700px at 25% 100%,
+          color-mix(in srgb, var(--c2) 70%, transparent),
+          transparent 55%),
+        radial-gradient(900px 700px at 80% 100%,
+          color-mix(in srgb, var(--c3) 65%, transparent),
+          transparent 55%);
+      filter: saturate(1.10);
     }
 
+    /* размытие обложки в нижней зоне (красиво как у тебя на фото) */
     .coverBlur{
       position:fixed; inset:0;
       background-size: cover;
       background-position:center;
-      filter: blur(46px) saturate(1.2) brightness(.55);
+      filter: blur(42px) saturate(1.25) brightness(.75);
       transform: scale(1.18);
       opacity:0;
       transition: opacity .35s ease;
+      mask-image: linear-gradient(180deg,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,0) calc(var(--split) * 100% - 6%),
+        rgba(0,0,0,1) calc(var(--split) * 100% + 4%),
+        rgba(0,0,0,1) 100%);
     }
-    .coverBlur.on{ opacity:.95; }
+    .coverBlur.on{ opacity:0.95; }
 
-    .veil{
+    /* Canvas-слой “дымной границы” */
+    canvas#smoke{
       position:fixed; inset:0;
-      background: linear-gradient(180deg,
-        rgba(0,0,0,.30) 0%,
-        rgba(0,0,0,.52) 40%,
-        rgba(0,0,0,.78) 70%,
-        rgba(0,0,0,.92) 100%);
+      width:100%; height:100%;
       pointer-events:none;
+      z-index:5;
     }
 
-    .app{
+    /* UI поверх */
+    .ui{
       position:relative;
       height:100%;
-      padding: calc(var(--safeTop) + 12px) 14px calc(var(--safeBottom) + 12px);
+      z-index:10;
       display:flex;
       flex-direction:column;
+      padding: calc(var(--safeTop) + 14px) 14px calc(var(--safeBottom) + 14px);
+      gap:12px;
     }
 
-    /* 2/3 top */
-    .top{
-      flex:2 1 0;
+    /* Верхняя зона — просто контейнер, без “карточки” */
+    .topZone{
+      flex: 2 1 0;
       min-height:0;
-      position:relative;
-      border-radius: var(--r1);
-      overflow:hidden;
-      padding: 14px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
       display:flex;
       flex-direction:column;
-      justify-content:space-between;
+      justify-content:flex-start;
+      gap:12px;
     }
 
-    /* мягкие подсветки под текстом */
-    .topGlow{
-      position:absolute; inset:-30%;
-      background:
-        radial-gradient(circle at 25% 30%, color-mix(in srgb, var(--c1) 22%, transparent), transparent 60%),
-        radial-gradient(circle at 75% 45%, color-mix(in srgb, var(--c2) 18%, transparent), transparent 62%),
-        radial-gradient(circle at 55% 85%, color-mix(in srgb, var(--c3) 12%, transparent), transparent 65%);
-      filter: blur(28px);
-      opacity:.95;
-      pointer-events:none;
+    /* Нижняя зона — для кнопок/прогресса */
+    .bottomZone{
+      flex: 1 1 0;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-end;
+      gap:10px;
+      padding-bottom: 2px;
     }
 
-    /* ЖИДКОЕ СТЕКЛО: canvas слой внутри top */
-    .liquidWrap{
-      position:absolute; inset:0;
-      pointer-events:none;
-      overflow:hidden;
-    }
-    canvas#liquid{
-      position:absolute; inset:0;
-      width:100%; height:100%;
-      filter: blur(1.5px) saturate(1.15);
-      opacity:.9;
-      transform: translateZ(0);
-    }
-
-    /* растворение в чёрном фоне вверх */
-    .liquidFadeUp{
-      position:absolute; inset:0;
-      background: linear-gradient(
-        0deg,
-        rgba(0,0,0,0.00) 0%,
-        rgba(0,0,0,0.15) 35%,
-        rgba(0,0,0,0.55) 70%,
-        rgba(0,0,0,0.88) 100%
-      );
-      /* ^ сверху темнее, чтобы "уходило в чёрный" */
-      pointer-events:none;
-    }
-
-    /* UI внутри top */
-    .topContent{ position:relative; z-index:2; display:flex; flex-direction:column; height:100%; }
-    .topbar{
+    /* Текст сверху */
+    .brand{
       display:flex; align-items:center; justify-content:space-between; gap:10px;
     }
-
-    .brand{
-      display:flex; align-items:center; gap:10px; min-width:0;
-    }
-    .dot{
-      width:10px; height:10px; border-radius:999px;
-      background: linear-gradient(135deg, var(--c1), var(--c2));
-      box-shadow: 0 0 24px color-mix(in srgb, var(--c1) 45%, transparent);
-      flex:0 0 auto;
-    }
-    .brandText{ min-width:0; }
+    .brandLeft{ display:flex; flex-direction:column; gap:6px; min-width:0; }
     .brandTitle{
-      font-size:10px; letter-spacing:.8px;
+      font-size:11px;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
     .brandSub{
-      margin-top:6px;
-      font-size:7px; color: var(--muted);
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-
-    .pill{
-      padding:10px 12px;
-      border-radius:999px;
-      border:1px solid var(--stroke);
-      background: rgba(255,255,255,.06);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      display:flex; align-items:center; gap:8px;
-      user-select:none; cursor:pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .pill span{ font-size:7px; color: var(--muted); }
-    .pill strong{ font-size:8px; letter-spacing:.6px; }
-
-    .nowArea{
-      margin-top:auto;
-      padding: 10px 2px 0;
-    }
-    .title{
-      margin:0;
-      font-size:12px;
-      line-height:1.35;
-      color: color-mix(in srgb, var(--c1) 85%, white);
-      text-shadow: 0 10px 40px rgba(0,0,0,.35);
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-    .artist{
-      margin-top:10px;
-      font-size:8px;
-      color: color-mix(in srgb, var(--c2) 75%, white);
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-
-    .metaRow{
-      margin-top:12px;
-      display:flex; gap:10px; flex-wrap:wrap;
-      font-size:7px; color: var(--muted2);
-      align-items:center;
-    }
-    .chip{
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      padding:8px 10px;
-      border-radius:999px;
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      display:inline-flex; gap:8px; align-items:center;
-    }
-    .chip b{ color: rgba(255,255,255,.88); }
-
-    .swipeHint{
-      margin-top:12px;
-      font-size:7px;
-      color: rgba(255,255,255,.35);
-    }
-
-    /* 1/3 bottom */
-    .bottom{
-      flex:1 1 0;
-      min-height:0;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      padding-top: 10px;
-    }
-
-    .controlsCard{
-      border-radius: var(--r1);
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      padding: 12px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      box-shadow: 0 22px 70px rgba(0,0,0,.45);
-    }
-
-    .artRow{
-      display:flex; align-items:center; gap:12px;
-      cursor:pointer;
-      user-select:none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .art{
-      width:54px; height:54px;
-      border-radius: 16px;
-      border: 2px solid color-mix(in srgb, var(--c1) 65%, rgba(255,255,255,.2));
-      overflow:hidden;
-      background: rgba(0,0,0,.35);
-      flex:0 0 auto;
-    }
-    .art img{ width:100%; height:100%; object-fit:cover; display:block; transform:scale(1.02); }
-
-    .miniMeta{ min-width:0; flex:1; }
-    .miniTitle{
-      font-size:9px;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      margin:0;
-      color: rgba(255,255,255,.92);
-    }
-    .miniArtist{
-      margin-top:6px;
       font-size:7px;
       color: var(--muted);
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
-    .openListHint{
-      font-size:7px;
-      color: rgba(255,255,255,.35);
-      text-align:right;
-      user-select:none;
+
+    .trackBlock{ margin-top:auto; padding-top:12px; }
+    .tTitle{
+      margin:0;
+      font-size:14px;
+      line-height:1.25;
+      color: rgba(255,255,255,.95);
+      text-shadow: 0 14px 50px rgba(0,0,0,.55);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .tArtist{
+      margin-top:10px;
+      font-size:9px;
+      color: rgba(255,255,255,.65);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
 
-    .progressWrap{ display:flex; flex-direction:column; gap:8px; }
-    .timeRow{
-      display:flex; justify-content:space-between;
-      font-size:7px; color: var(--muted2);
-    }
-    .bar{
-      height:14px;
-      border-radius:999px;
+    /* Нижняя панель под “мутным стеклом” */
+    .controls{
       background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.12);
-      overflow:hidden;
-      cursor:pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .fill{
-      height:100%;
-      width:0%;
-      background: linear-gradient(90deg, var(--c3), var(--c1), var(--c2));
-      box-shadow: 0 0 18px color-mix(in srgb, var(--c1) 25%, transparent);
-      transition: width .08s linear;
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-radius: 22px;
+      padding: 12px;
+      box-shadow: 0 26px 80px rgba(0,0,0,.55);
     }
 
-    .btnRow{ display:flex; gap:10px; }
+    .row{ display:flex; gap:10px; align-items:center; }
     .btn{
       flex:1;
       border:none;
-      border-radius: var(--r2);
+      border-radius: 18px;
       padding: 12px 10px;
       cursor:pointer;
       user-select:none;
       -webkit-tap-highlight-color: transparent;
       font-family:'Press Start 2P', cursive;
       font-size:10px;
-      color: var(--text);
-      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.92);
+      background: rgba(255,255,255,.08);
       border: 1px solid rgba(255,255,255,.12);
     }
-    .btn:active{ transform: translateY(1px); }
-
     .btnPlay{
       flex:2;
-      background: color-mix(in srgb, var(--c2) 18%, rgba(255,255,255,.06));
-      border-color: color-mix(in srgb, var(--c2) 55%, rgba(255,255,255,.12));
+      background: linear-gradient(90deg,
+        color-mix(in srgb, var(--c2) 35%, rgba(255,255,255,.06)),
+        color-mix(in srgb, var(--c1) 25%, rgba(255,255,255,.06))
+      );
+      border-color: rgba(255,255,255,.18);
     }
 
-    .toggleRow{ display:flex; gap:10px; }
+    .bar{
+      height:14px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      overflow:hidden;
+      cursor:pointer;
+    }
+    .fill{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3));
+      box-shadow: 0 0 24px color-mix(in srgb, var(--c2) 35%, transparent);
+    }
+
+    .timeRow{
+      display:flex; justify-content:space-between;
+      font-size:7px; color: rgba(255,255,255,.55);
+      margin-top:8px;
+    }
+
+    .toggleRow{ display:flex; gap:10px; margin-top:10px; }
     .toggle{
       flex:1;
-      border-radius: var(--r2);
+      border-radius: 18px;
       padding: 10px 10px;
       font-family:'Press Start 2P', cursive;
       font-size:8px;
-      color: var(--muted);
-      background: rgba(255,255,255,.05);
+      color: rgba(255,255,255,.60);
+      background: rgba(255,255,255,.06);
       border: 1px solid rgba(255,255,255,.12);
       cursor:pointer;
-      user-select:none;
-      -webkit-tap-highlight-color: transparent;
     }
     .toggle.on{
-      color: rgba(0,0,0,.88);
+      color: rgba(0,0,0,.9);
       background: linear-gradient(90deg,
-        color-mix(in srgb, var(--c1) 85%, white),
-        color-mix(in srgb, var(--c2) 75%, white)
+        color-mix(in srgb, var(--c2) 80%, white),
+        color-mix(in srgb, var(--c1) 70%, white)
       );
-      border-color: rgba(255,255,255,.22);
+      border-color: rgba(255,255,255,.20);
     }
 
-    /* Bottom sheet */
+    /* bottom sheet */
     .sheet{
       position:fixed;
       left:0; right:0;
       bottom: calc(-72vh + var(--safeBottom));
       height: 72vh;
       border-radius: 26px 26px 0 0;
-      background: rgba(12,12,18,.72);
+      background: rgba(12,12,18,.76);
       border-top: 1px solid rgba(255,255,255,.14);
       backdrop-filter: blur(22px);
       -webkit-backdrop-filter: blur(22px);
@@ -391,7 +268,7 @@
       border-radius:999px;
       border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.05);
-      color: var(--text);
+      color: rgba(255,255,255,.92);
       cursor:pointer;
     }
     .sheetBody{
@@ -408,22 +285,18 @@
       border-radius: 18px;
       border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.05);
-      color: color-mix(in srgb, var(--c1) 70%, white);
+      color: rgba(255,255,255,.92);
       font-family:'Press Start 2P', cursive;
       font-size:8px;
       outline:none;
     }
     .search::placeholder{ color: rgba(255,255,255,.35); }
-
     .list{
       min-height:0;
       overflow:auto;
       padding-right: 6px;
       margin-right: -6px;
     }
-    .list::-webkit-scrollbar{ width:6px; }
-    .list::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.14); border-radius:999px; }
-
     .item{
       display:flex;
       align-items:center;
@@ -434,13 +307,11 @@
       border:1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.04);
       cursor:pointer;
-      user-select:none;
-      -webkit-tap-highlight-color: transparent;
       margin-bottom:10px;
     }
     .item.active{
-      border-color: color-mix(in srgb, var(--c3) 55%, rgba(255,255,255,.15));
-      background: color-mix(in srgb, var(--c3) 10%, rgba(255,255,255,.04));
+      border-color: rgba(255,255,255,.20);
+      background: rgba(255,255,255,.07);
     }
     .itLeft{ min-width:0; }
     .itTitle{
@@ -452,7 +323,7 @@
     .itArtist{
       margin-top:6px;
       font-size:7px;
-      color: var(--muted);
+      color: rgba(255,255,255,.55);
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
     .badge{
@@ -468,65 +339,32 @@
 </head>
 
 <body>
-  <div class="bgCover"></div>
+  <div class="scene"></div>
   <div class="coverBlur" id="coverBlur"></div>
-  <div class="veil"></div>
+  <canvas id="smoke"></canvas>
 
-  <div class="app">
-    <div class="top" id="top">
-      <div class="topGlow"></div>
-
-      <!-- liquid inside top -->
-      <div class="liquidWrap">
-        <canvas id="liquid"></canvas>
-        <div class="liquidFadeUp"></div>
+  <div class="ui">
+    <div class="topZone" id="topZone">
+      <div class="brand">
+        <div class="brandLeft">
+          <div class="brandTitle">BRIGADA PLAYER</div>
+          <div class="brandSub" id="status">CONNECTING...</div>
+        </div>
+        <div class="brandSub">SWIPE UP</div>
       </div>
 
-      <div class="topContent">
-        <div class="topbar">
-          <div class="brand">
-            <div class="dot"></div>
-            <div class="brandText">
-              <div class="brandTitle">BRIGADA PLAYER</div>
-              <div class="brandSub" id="status">CONNECTING...</div>
-            </div>
-          </div>
-          <div class="pill" id="refreshBtn">
-            <span>TRACKS</span><strong id="count">0</strong>
-          </div>
-        </div>
-
-        <div class="nowArea">
-          <h1 class="title" id="title">TERMINAL_READY</h1>
-          <div class="artist" id="artist">SELECT_TRACK</div>
-
-          <div class="metaRow">
-            <div class="chip"><span>PLAYS</span> <b id="plays">0</b></div>
-            <div class="chip"><span>MODE</span> <b id="mode">NORMAL</b></div>
-          </div>
-
-          <div class="swipeHint">SWIPE UP → PLAYLIST</div>
-        </div>
+      <div class="trackBlock">
+        <h1 class="tTitle" id="title">TERMINAL_READY</h1>
+        <div class="tArtist" id="artist">SELECT_TRACK</div>
       </div>
     </div>
 
-    <div class="bottom">
-      <div class="controlsCard">
-        <div class="artRow" id="openSheetTap">
-          <div class="art"><img id="artImg" src="poster.jpg" alt="cover"></div>
-          <div class="miniMeta">
-            <p class="miniTitle" id="miniTitle">TERMINAL_READY</p>
-            <div class="miniArtist" id="miniArtist">SELECT_TRACK</div>
-          </div>
-          <div class="openListHint">▲</div>
-        </div>
+    <div class="bottomZone">
+      <div class="controls">
+        <div class="bar" id="bar"><div class="fill" id="fill"></div></div>
+        <div class="timeRow"><div id="tCur">0:00</div><div id="tDur">0:00</div></div>
 
-        <div class="progressWrap">
-          <div class="bar" id="bar"><div class="fill" id="fill"></div></div>
-          <div class="timeRow"><div id="tCur">0:00</div><div id="tDur">0:00</div></div>
-        </div>
-
-        <div class="btnRow">
+        <div class="row" style="margin-top:10px;">
           <button class="btn" id="prev">&lt;</button>
           <button class="btn btnPlay" id="play">START</button>
           <button class="btn" id="next">&gt;</button>
@@ -560,7 +398,7 @@
     // КОНФИГУРАЦИЯ (ФРОНТ)
     // =========================
     const SUPABASE_URL = "https://lrggqgwzalqstwjbgbbn.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_gNPjEKC-lYCueII_lnL-HA_gCKV_BFE"; // публичный ключ — ОК
+    const SUPABASE_KEY = "sb_publishable_gNPjEKC-lYCueII_lnL-HA_gCKV_BFE";
     // =========================
 
     const tg = window.Telegram?.WebApp;
@@ -579,15 +417,8 @@
 
     const els = {
       status: document.getElementById("status"),
-      count: document.getElementById("count"),
       title: document.getElementById("title"),
       artist: document.getElementById("artist"),
-      plays: document.getElementById("plays"),
-      mode: document.getElementById("mode"),
-
-      artImg: document.getElementById("artImg"),
-      miniTitle: document.getElementById("miniTitle"),
-      miniArtist: document.getElementById("miniArtist"),
       coverBlur: document.getElementById("coverBlur"),
 
       bar: document.getElementById("bar"),
@@ -600,23 +431,20 @@
       next: document.getElementById("next"),
       shuffle: document.getElementById("shuffle"),
       repeat: document.getElementById("repeat"),
-      refresh: document.getElementById("refreshBtn"),
 
       sheet: document.getElementById("sheet"),
       sheetHeader: document.getElementById("sheetHeader"),
       sheetClose: document.getElementById("sheetClose"),
-      openSheetTap: document.getElementById("openSheetTap"),
       search: document.getElementById("search"),
       playlist: document.getElementById("playlist"),
 
-      top: document.getElementById("top"),
-      liquid: document.getElementById("liquid"),
+      smoke: document.getElementById("smoke"),
+      topZone: document.getElementById("topZone"),
     };
 
-    function haptic(type="medium"){
+    function haptic(type="light"){
       try { tg?.HapticFeedback?.impactOccurred(type); } catch(e){}
     }
-
     function formatTime(sec){
       if (!isFinite(sec)) return "0:00";
       sec = Math.max(0, Math.floor(sec));
@@ -625,12 +453,12 @@
       return `${m}:${String(s).padStart(2,"0")}`;
     }
 
-    // -------- colors from cover (fast) --------
-    async function extractColorsFromImage(imgEl){
+    // ======= Цвета из обложки (быстро) =======
+    async function extractColorsFromUrl(url){
       try{
         const img = new Image();
         img.crossOrigin = "anonymous";
-        img.src = imgEl.src;
+        img.src = url;
         await img.decode();
 
         const c = document.createElement("canvas");
@@ -641,7 +469,7 @@
 
         const data = ctx.getImageData(0,0,w,h).data;
         const samples = [];
-        for (let i=0; i<data.length; i+=4*8){
+        for (let i=0; i<data.length; i+=4*6){
           const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
           if (a < 200) continue;
           if (r+g+b < 70) continue;
@@ -652,7 +480,9 @@
         const pick = (base=null) => {
           let best=null, bestD=-1;
           for (const s of samples){
-            const d = base ? (Math.abs(s[0]-base[0])+Math.abs(s[1]-base[1])+Math.abs(s[2]-base[2])) : (s[0]+s[1]+s[2]);
+            const d = base
+              ? (Math.abs(s[0]-base[0])+Math.abs(s[1]-base[1])+Math.abs(s[2]-base[2]))
+              : (s[0]+s[1]+s[2]);
             if (d > bestD){ bestD=d; best=s; }
           }
           return best;
@@ -668,35 +498,32 @@
       } catch(e){}
     }
 
-    function setCover(url){
-      const u = (url && String(url).trim()) ? url : "poster.jpg";
-      els.artImg.src = u;
-      els.coverBlur.style.backgroundImage = `url('${u}')`;
-      if (u !== "poster.jpg") els.coverBlur.classList.add("on");
-      else els.coverBlur.classList.remove("on");
-
-      setTimeout(()=>extractColorsFromImage(els.artImg), 60);
+    function setCoverBlur(url){
+      if (!url) { els.coverBlur.classList.remove("on"); return; }
+      els.coverBlur.style.backgroundImage = `url('${url}')`;
+      els.coverBlur.classList.add("on");
+      extractColorsFromUrl(url);
     }
 
     function tryReadCoverFromMp3(audioUrl){
       try{
         new window.jsmediatags.Reader(audioUrl).read({
           onSuccess: function(tag){
-            const image = tag?.tags?.picture;
-            if (!image) return;
-            let base64String = "";
-            for (let i=0;i<image.data.length;i++) base64String += String.fromCharCode(image.data[i]);
-            const dataUrl = `data:${image.format};base64,${window.btoa(base64String)}`;
-            setCover(dataUrl);
+            const pic = tag?.tags?.picture;
+            if (!pic) return;
+            let base64 = "";
+            for (let i=0;i<pic.data.length;i++) base64 += String.fromCharCode(pic.data[i]);
+            const dataUrl = `data:${pic.format};base64,${window.btoa(base64)}`;
+            setCoverBlur(dataUrl);
           },
           onError: function(){ }
         });
       } catch(e){}
     }
 
-    // -------- supabase --------
+    // ======= Supabase =======
     async function fetchTracks(){
-      els.status.textContent = "LOADING_TRACKS...";
+      els.status.textContent = "LOADING...";
       try{
         const response = await fetch(`${SUPABASE_URL}/rest/v1/tracks?select=*&order=id.asc`, {
           headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
@@ -705,28 +532,19 @@
 
         tracks = await response.json();
         filteredTracks = tracks;
-
-        els.count.textContent = String(tracks.length);
         els.status.textContent = tracks.length ? "READY" : "EMPTY_LIBRARY";
 
         renderPlaylist();
-
         if (tracks.length) loadTrack(0, { autoplay:false });
-        else setEmpty();
+        else {
+          els.title.textContent = "NO_TRACKS";
+          els.artist.textContent = "UPLOAD_MP3";
+        }
       } catch(e){
         els.status.textContent = "CONN_ERROR";
         els.title.textContent = "CONN_ERROR";
         els.artist.textContent = "CHECK_KEY_OR_RLS";
       }
-    }
-
-    function setEmpty(){
-      els.title.textContent = "NO_TRACKS";
-      els.artist.textContent = "UPLOAD_MP3_TO_STORAGE";
-      els.miniTitle.textContent = "NO_TRACKS";
-      els.miniArtist.textContent = "UPLOAD_MP3";
-      els.plays.textContent = "0";
-      setCover("poster.jpg");
     }
 
     function renderPlaylist(){
@@ -773,16 +591,12 @@
     }
 
     function updateActiveItem(){
-      const items = els.playlist.querySelectorAll(".item");
-      items.forEach((item) => {
-        const i = Number(item.dataset.index);
-        item.classList.toggle("active", i === currentTrackIndex);
+      els.playlist.querySelectorAll(".item").forEach((it) => {
+        it.classList.toggle("active", Number(it.dataset.index) === currentTrackIndex);
       });
     }
 
-    function setPlayBtn(){
-      els.play.textContent = audio.paused ? "START" : "STOP";
-    }
+    function setPlayBtn(){ els.play.textContent = audio.paused ? "START" : "STOP"; }
 
     function loadTrack(index, { autoplay=false } = {}){
       const track = tracks[index];
@@ -790,36 +604,27 @@
 
       els.title.textContent = track.title || "UNTITLED";
       els.artist.textContent = track.artist || "UNKNOWN_ARTIST";
-      els.miniTitle.textContent = track.title || "UNTITLED";
-      els.miniArtist.textContent = track.artist || "UNKNOWN_ARTIST";
-
-      const plays = track.plays || 0;
-      els.plays.textContent = String(plays);
 
       audio.src = track.audio_url;
       audio.loop = isRepeat;
-
       lastPlaysTrackId = null;
-      els.mode.textContent = isShuffle ? "SHUFFLE" : "NORMAL";
 
-      setCover("poster.jpg");
+      // обложка -> цвета
+      els.coverBlur.classList.remove("on");
       if (track.image_url && track.image_url !== "NULL" && String(track.image_url).trim() !== ""){
-        setCover(track.image_url);
+        setCoverBlur(track.image_url);
       } else {
         tryReadCoverFromMp3(track.audio_url);
       }
 
       updateActiveItem();
       setPlayBtn();
-
       if (autoplay) playAudio();
     }
 
     async function updatePlayCount(track){
       const newCount = (track.plays || 0) + 1;
       track.plays = newCount;
-      els.plays.textContent = String(newCount);
-
       const badge = els.playlist.querySelector(`.item[data-index="${currentTrackIndex}"] .badge`);
       if (badge) badge.textContent = `PLAYS:${newCount}`;
 
@@ -844,30 +649,28 @@
         await audio.play();
         isPlaying = true;
         setPlayBtn();
-
         if (lastPlaysTrackId !== track.id){
           lastPlaysTrackId = track.id;
           updatePlayCount(track);
         }
-
-        startLiquid();
+        startSmoke();
       } catch(e){
         isPlaying = false;
         setPlayBtn();
       }
     }
-
     function stopAudio(){
       audio.pause();
       isPlaying = false;
       setPlayBtn();
-      stopLiquid();
+      stopSmoke();
     }
 
     function nextTrack(){
       if (!tracks.length) return;
-      if (isShuffle) currentTrackIndex = Math.floor(Math.random() * tracks.length);
-      else currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+      currentTrackIndex = isShuffle
+        ? Math.floor(Math.random() * tracks.length)
+        : (currentTrackIndex + 1) % tracks.length;
       loadTrack(currentTrackIndex, { autoplay: isPlaying });
       if (isPlaying) playAudio();
     }
@@ -878,16 +681,12 @@
       if (isPlaying) playAudio();
     }
 
-    // -------- bottom sheet --------
+    // ======= Sheet свайпы =======
     let sheetOpen = false;
     function openSheet(){ sheetOpen = true; els.sheet.classList.add("open"); haptic("light"); }
     function closeSheet(){ sheetOpen = false; els.sheet.classList.remove("open"); haptic("light"); }
-    function toggleSheet(){ sheetOpen ? closeSheet() : openSheet(); }
+    els.sheetClose.onclick = closeSheet;
 
-    els.openSheetTap.onclick = () => openSheet();
-    els.sheetClose.onclick = () => closeSheet();
-
-    // swipe up on TOP
     let startY=0, dragging=false;
     function onStart(y){ dragging=true; startY=y; }
     function onMove(y){
@@ -897,27 +696,23 @@
       if (sheetOpen && dy > 45){ closeSheet(); dragging=false; }
     }
     function onEnd(){ dragging=false; }
-
-    els.top.addEventListener("touchstart",(e)=>onStart(e.touches[0].clientY),{passive:true});
-    els.top.addEventListener("touchmove",(e)=>onMove(e.touches[0].clientY),{passive:true});
-    els.top.addEventListener("touchend",onEnd);
-
+    els.topZone.addEventListener("touchstart",(e)=>onStart(e.touches[0].clientY),{passive:true});
+    els.topZone.addEventListener("touchmove",(e)=>onMove(e.touches[0].clientY),{passive:true});
+    els.topZone.addEventListener("touchend",onEnd);
     els.sheetHeader.addEventListener("touchstart",(e)=>onStart(e.touches[0].clientY),{passive:true});
     els.sheetHeader.addEventListener("touchmove",(e)=>onMove(e.touches[0].clientY),{passive:true});
     els.sheetHeader.addEventListener("touchend",onEnd);
 
-    // search
     els.search.oninput = (e) => {
       const val = (e.target.value || "").toLowerCase().trim();
-      if (!val) filteredTracks = tracks;
-      else filteredTracks = tracks.filter(t =>
+      filteredTracks = !val ? tracks : tracks.filter(t =>
         String(t.title || "").toLowerCase().includes(val) ||
         String(t.artist || "").toLowerCase().includes(val)
       );
       renderPlaylist();
     };
 
-    // controls
+    // ======= Controls =======
     els.play.onclick = () => { if (audio.paused) playAudio(); else stopAudio(); haptic("medium"); };
     els.next.onclick = () => { nextTrack(); haptic("light"); };
     els.prev.onclick = () => { prevTrack(); haptic("light"); };
@@ -926,17 +721,15 @@
       isShuffle = !isShuffle;
       els.shuffle.textContent = isShuffle ? "SHUFFLE: ON" : "SHUFFLE: OFF";
       els.shuffle.classList.toggle("on", isShuffle);
-      els.mode.textContent = isShuffle ? "SHUFFLE" : "NORMAL";
       haptic("light");
     };
     els.repeat.onclick = () => {
       isRepeat = !isRepeat;
+      audio.loop = isRepeat;
       els.repeat.textContent = isRepeat ? "REPEAT: ON" : "REPEAT: OFF";
       els.repeat.classList.toggle("on", isRepeat);
-      audio.loop = isRepeat;
       haptic("light");
     };
-    els.refresh.onclick = () => { haptic("light"); fetchTracks(); };
 
     // progress
     audio.ontimeupdate = () => {
@@ -947,7 +740,6 @@
       els.tDur.textContent = formatTime(audio.duration);
     };
     audio.onended = () => { if (!isRepeat) nextTrack(); };
-
     els.bar.onclick = (e) => {
       if (!audio.duration) return;
       const r = els.bar.getBoundingClientRect();
@@ -956,35 +748,52 @@
       haptic("light");
     };
 
-    // -------- LIQUID GLASS VISUALIZER --------
+    // =========================================
+    // ДЫМНАЯ ГРАНИЦА (как на твоём примере)
+    // =========================================
     let audioCtx=null, analyser=null, srcNode=null;
     let raf=null;
-
-    const g2 = els.liquid.getContext("2d");
-
-    function resizeLiquid(){
-      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      const rect = els.liquid.getBoundingClientRect();
-      els.liquid.width = Math.floor(rect.width * dpr);
-      els.liquid.height = Math.floor(rect.height * dpr);
-      g2.setTransform(dpr,0,0,dpr,0,0);
-    }
-    window.addEventListener("resize", resizeLiquid);
-    setTimeout(resizeLiquid, 0);
+    const ctx = els.smoke.getContext("2d");
 
     function ensureGraph(){
       if (audioCtx) return;
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.86;
-
+      analyser.smoothingTimeConstant = 0.88;
       srcNode = audioCtx.createMediaElementSource(audio);
       srcNode.connect(analyser);
       analyser.connect(audioCtx.destination);
     }
 
-    function startLiquid(){
+    function resizeSmoke(){
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const w = Math.floor(innerWidth * dpr);
+      const h = Math.floor(innerHeight * dpr);
+      els.smoke.width = w;
+      els.smoke.height = h;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    addEventListener("resize", resizeSmoke);
+    resizeSmoke();
+
+    // простая noise-функция (без библиотек)
+    function n2(x,y){
+      const s = Math.sin(x*127.1 + y*311.7) * 43758.5453123;
+      return s - Math.floor(s);
+    }
+    function smoothNoise(x,y){
+      const x0 = Math.floor(x), y0 = Math.floor(y);
+      const xf = x - x0, yf = y - y0;
+      const a = n2(x0,y0), b = n2(x0+1,y0), c = n2(x0,y0+1), d = n2(x0+1,y0+1);
+      const u = xf*xf*(3-2*xf);
+      const v = yf*yf*(3-2*yf);
+      const ab = a + (b-a)*u;
+      const cd = c + (d-c)*u;
+      return ab + (cd-ab)*v;
+    }
+
+    function startSmoke(){
       try{
         ensureGraph();
         if (audioCtx.state === "suspended") audioCtx.resume();
@@ -993,105 +802,99 @@
       if (raf) return;
 
       const freq = new Uint8Array(analyser.frequencyBinCount);
-      const time = new Uint8Array(analyser.frequencyBinCount);
-
       let t = 0;
 
       const draw = () => {
         raf = requestAnimationFrame(draw);
         t += 0.016;
 
-        const w = els.liquid.clientWidth;
-        const h = els.liquid.clientHeight;
+        const W = innerWidth;
+        const H = innerHeight;
 
         analyser.getByteFrequencyData(freq);
-        analyser.getByteTimeDomainData(time);
 
-        // energy (0..1)
+        // энергия баса (0..1)
         let sum = 0;
-        for (let i=0; i<64; i++) sum += freq[i];
-        const energy = Math.min(1, sum / (64*255));
+        for (let i=0; i<70; i++) sum += freq[i];
+        const energy = Math.min(1, sum / (70*255));
 
-        // clear with slight trails (liquid smear)
-        g2.fillStyle = "rgba(0,0,0,0.16)";
-        g2.fillRect(0,0,w,h);
+        ctx.clearRect(0,0,W,H);
 
-        // draw multiple glass ribbons
-        const layers = 3;
-        for (let L=0; L<layers; L++){
-          const baseY = h*(0.72 - L*0.12);
-          const amp = (h*(0.09 + energy*0.18)) * (1 - L*0.18);
-          const speed = 0.8 + L*0.35;
+        // линия раздела по split
+        const split = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--split")) || 0.66;
+        const yBase = H * split;
 
-          g2.beginPath();
-          for (let x=0; x<=w; x+=6){
-            const i = Math.floor((x/w) * 160);
-            const wave = (time[i] - 128) / 128; // -1..1
-            const f = (freq[i] / 255);          // 0..1
-            const noise = Math.sin((x*0.014) + t*speed) * 0.35;
-            const y = baseY
-              - (wave*0.45 + noise*0.55) * amp
-              - f * amp * (0.55 + L*0.15);
+        // толщина дымной зоны
+        const band = 140 + energy*140;
 
-            if (x===0) g2.moveTo(x,y);
-            else g2.lineTo(x,y);
+        // рисуем дым: много “ленточных” слоёв
+        for (let layer=0; layer<3; layer++){
+          const a = 0.10 + layer*0.06 + energy*0.10;
+          const speed = 0.55 + layer*0.35;
+          const amp = 22 + layer*10 + energy*30;
+
+          ctx.beginPath();
+          for (let x=0; x<=W; x+=8){
+            const nx = x*0.006;
+            const ny = t*speed;
+            const s = smoothNoise(nx + layer*10, ny + layer*20);
+            const w = Math.sin(x*0.012 + t*speed*1.3 + layer) * 0.45;
+            const y = yBase + (s-0.5)*amp + w*amp;
+            if (x===0) ctx.moveTo(x,y);
+            else ctx.lineTo(x,y);
           }
 
-          // fill down
-          g2.lineTo(w, h);
-          g2.lineTo(0, h);
-          g2.closePath();
+          // закрываем вниз (в нижнюю зону)
+          ctx.lineTo(W, yBase + band);
+          ctx.lineTo(0, yBase + band);
+          ctx.closePath();
 
-          // glass fill (color mixed from css — подстраивается)
-          // используем белый + прозрачность, а цвет даёт фон/глоу; сверху — лёгкий tint
-          const alpha = 0.10 + energy*0.16;
-          g2.fillStyle = `rgba(255,255,255,${alpha})`;
-          g2.fill();
-
-          // highlight edge
-          g2.strokeStyle = `rgba(255,255,255,${0.10 + energy*0.18})`;
-          g2.lineWidth = 1.5;
-          g2.stroke();
+          // “дымное стекло” — светлое, но мягкое
+          ctx.fillStyle = `rgba(220,235,255,${a})`;
+          ctx.fill();
         }
 
-        // bright drops (glints)
-        const drops = 10;
-        for (let k=0; k<drops; k++){
-          const x = (k/drops)*w + (Math.sin(t*1.2 + k)*18);
-          const i = Math.floor((x/w) * 200);
-          const f = freq[i]/255;
-          const y = h*(0.52) + Math.sin(t*2 + k)*22 - f*120;
-          const r = 1.2 + f*3.2;
-
-          g2.beginPath();
-          g2.arc(x,y,r,0,Math.PI*2);
-          g2.fillStyle = `rgba(255,255,255,${0.08 + f*0.25})`;
-          g2.fill();
+        // мягкие блики по самой границе
+        ctx.globalCompositeOperation = "lighter";
+        ctx.beginPath();
+        for (let x=0; x<=W; x+=6){
+          const s = smoothNoise(x*0.01, t*0.9);
+          const y = yBase + (s-0.5)*(16 + energy*22);
+          if (x===0) ctx.moveTo(x,y);
+          else ctx.lineTo(x,y);
         }
+        ctx.strokeStyle = `rgba(255,255,255,${0.12 + energy*0.18})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.globalCompositeOperation = "source-over";
 
-        // top fade to black (усиление растворения вверх)
-        const grad = g2.createLinearGradient(0,0,0,h);
-        grad.addColorStop(0, "rgba(0,0,0,.90)");
-        grad.addColorStop(0.45, "rgba(0,0,0,.45)");
-        grad.addColorStop(1, "rgba(0,0,0,0)");
-        g2.fillStyle = grad;
-        g2.fillRect(0,0,w,h);
+        // IMPORTANT: растворение вверх (как на твоём фото)
+        const gradUp = ctx.createLinearGradient(0, yBase - band, 0, yBase + band*0.2);
+        gradUp.addColorStop(0, "rgba(0,0,0,0.95)");
+        gradUp.addColorStop(0.35, "rgba(0,0,0,0.55)");
+        gradUp.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = gradUp;
+        ctx.fillRect(0, yBase - band, W, band*1.2);
+
+        // и чуть “молока” вниз (как свет внизу на примере)
+        const gradDown = ctx.createLinearGradient(0, yBase, 0, yBase + band*0.95);
+        gradDown.addColorStop(0, `rgba(255,255,255,${0.10 + energy*0.12})`);
+        gradDown.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = gradDown;
+        ctx.fillRect(0, yBase, W, band);
       };
 
       draw();
     }
 
-    function stopLiquid(){
-      if (raf){
-        cancelAnimationFrame(raf);
-        raf = null;
-      }
+    function stopSmoke(){
+      if (raf){ cancelAnimationFrame(raf); raf=null; }
     }
 
-    audio.addEventListener("pause", stopLiquid);
-    audio.addEventListener("ended", stopLiquid);
+    audio.addEventListener("pause", stopSmoke);
+    audio.addEventListener("ended", stopSmoke);
 
-    // init
+    // ======= init =======
     fetchTracks();
   </script>
 </body>
