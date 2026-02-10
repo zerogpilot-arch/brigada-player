@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>БРИГАДА: CLOUD PLAYER v2.1</title>
+  <title>BRIGADA • PLAYER</title>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
@@ -11,21 +11,22 @@
 
   <style>
     :root{
-      --explosive-orange:#ff8a00;
-      --neon-cyan:#00f0ff;
-      --hp-green:#39ff14;
-      --bg-dark:#06060a;
+      --bg:#05060a;
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.60);
+      --muted2:rgba(255,255,255,.42);
+
+      /* эти цвета будут динамически меняться из обложки */
+      --c1:#00f0ff;
+      --c2:#ff8a00;
+      --c3:#39ff14;
 
       --glass: rgba(255,255,255,.08);
       --glass2: rgba(255,255,255,.12);
       --stroke: rgba(255,255,255,.14);
 
-      --text: rgba(255,255,255,.92);
-      --muted: rgba(255,255,255,.65);
-      --muted2: rgba(255,255,255,.45);
-
-      --shadow: 0 22px 70px rgba(0,0,0,.45);
-      --radius: 26px;
+      --r1:26px;
+      --r2:18px;
 
       --safeTop: env(safe-area-inset-top);
       --safeBottom: env(safe-area-inset-bottom);
@@ -35,324 +36,370 @@
     html,body{ height:100%; }
     body{
       margin:0;
-      background: var(--bg-dark);
+      background: var(--bg);
       color: var(--text);
       overflow:hidden;
-      font-family: 'Press Start 2P', cursive;
+      font-family:'Press Start 2P', cursive;
       text-transform: uppercase;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Animated cyber background */
-    .bg{
+    .bgCover{
       position:fixed; inset:0;
       background:
-        radial-gradient(1200px 800px at 20% 10%, rgba(0,240,255,.22), transparent 55%),
-        radial-gradient(1000px 700px at 85% 25%, rgba(255,138,0,.18), transparent 55%),
-        radial-gradient(900px 650px at 55% 92%, rgba(57,255,20,.12), transparent 60%),
-        linear-gradient(180deg, #04040a, #070716 55%, #04040a);
-      filter:saturate(1.1);
+        radial-gradient(1200px 800px at 20% 0%, color-mix(in srgb, var(--c1) 25%, transparent), transparent 60%),
+        radial-gradient(1000px 700px at 85% 20%, color-mix(in srgb, var(--c2) 22%, transparent), transparent 55%),
+        radial-gradient(900px 650px at 50% 92%, color-mix(in srgb, var(--c3) 14%, transparent), transparent 60%),
+        linear-gradient(180deg, #04040a, #070717 55%, #04040a);
+      filter: saturate(1.12);
     }
-    .bg::after{
-      content:"";
-      position:absolute; inset:-40%;
-      background: conic-gradient(from 210deg,
-        rgba(0,240,255,.18),
-        rgba(255,138,0,.14),
-        rgba(57,255,20,.12),
-        rgba(0,240,255,.18));
-      animation: spin 18s linear infinite;
-      filter: blur(90px);
-      opacity:.75;
-    }
-    @keyframes spin{ to{ transform: rotate(360deg); } }
 
-    /* Backdrop from cover */
-    .backdrop{
+    .coverBlur{
       position:fixed; inset:0;
       background-size: cover;
       background-position:center;
-      filter: blur(42px) saturate(1.2) brightness(.55);
+      filter: blur(46px) saturate(1.2) brightness(.55);
       transform: scale(1.18);
       opacity:0;
       transition: opacity .35s ease;
     }
-    .backdrop.on{ opacity: .95; }
+    .coverBlur.on{ opacity:.95; }
 
     .veil{
       position:fixed; inset:0;
-      background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.70) 55%, rgba(0,0,0,.82));
+      background: linear-gradient(180deg,
+        rgba(0,0,0,.35) 0%,
+        rgba(0,0,0,.55) 45%,
+        rgba(0,0,0,.80) 72%,
+        rgba(0,0,0,.92) 100%);
       pointer-events:none;
     }
 
-    /* App layout */
     .app{
       position:relative;
       height:100%;
-      padding: calc(var(--safeTop) + 14px) 16px calc(var(--safeBottom) + 14px);
+      padding: calc(var(--safeTop) + 12px) 14px calc(var(--safeBottom) + 12px);
       display:flex;
       flex-direction:column;
-      gap:12px;
     }
 
-    /* Top bar */
-    .topbar{
+    /* 2/3 top */
+    .top{
+      flex: 2 1 0;
+      min-height:0;
       display:flex;
-      align-items:center;
+      flex-direction:column;
       justify-content:space-between;
-      gap:12px;
-      min-height: 44px;
+      gap:10px;
+      padding-bottom: 8px;
+    }
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
     }
 
     .brand{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width:0;
+      display:flex; align-items:center; gap:10px; min-width:0;
     }
     .dot{
       width:10px; height:10px; border-radius:999px;
-      background: linear-gradient(135deg, var(--neon-cyan), var(--explosive-orange));
-      box-shadow: 0 0 22px rgba(0,240,255,.35);
+      background: linear-gradient(135deg, var(--c1), var(--c2));
+      box-shadow: 0 0 24px color-mix(in srgb, var(--c1) 45%, transparent);
       flex:0 0 auto;
     }
-    .brand .t1{
-      font-size:10px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      letter-spacing:.6px;
+    .brandText{ min-width:0; }
+    .brandTitle{
+      font-size:10px; letter-spacing:.8px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
-    .brand .t2{
-      margin-top:4px;
-      font-size:7px;
-      color: var(--muted);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      letter-spacing:.4px;
+    .brandSub{
+      margin-top:6px;
+      font-size:7px; color: var(--muted);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
 
     .pill{
-      display:flex;
-      gap:8px;
-      align-items:center;
       padding:10px 12px;
       border-radius:999px;
+      border:1px solid var(--stroke);
       background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.12);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      box-shadow: 0 10px 28px rgba(0,0,0,.22);
-      user-select:none;
-      cursor:pointer;
+      display:flex; align-items:center; gap:8px;
+      user-select:none; cursor:pointer;
       -webkit-tap-highlight-color: transparent;
     }
     .pill span{ font-size:7px; color: var(--muted); }
     .pill strong{ font-size:8px; letter-spacing:.6px; }
 
-    /* Main card */
-    .card{
-      flex:1 1 auto;
+    .nowArea{
       display:flex;
       flex-direction:column;
-      gap:12px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: var(--radius);
-      padding: 14px;
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      position:relative;
-      min-height:0;
+      gap:10px;
+      padding: 4px 2px 0;
     }
 
-    .card::before{
-      content:"";
-      position:absolute; inset:-2px;
-      background:
-        radial-gradient(800px 300px at 20% 20%, rgba(0,240,255,.18), transparent 60%),
-        radial-gradient(900px 400px at 80% 0%, rgba(255,138,0,.14), transparent 55%),
-        radial-gradient(700px 380px at 60% 90%, rgba(57,255,20,.10), transparent 55%);
-      pointer-events:none;
-    }
-
-    .now{
-      position:relative; z-index:1;
-      display:grid;
-      grid-template-columns: 120px 1fr;
-      gap:12px;
-      align-items:center;
-    }
-
-    /* Album art flicker (old vibe) */
-    @keyframes artFlicker {
-      0% { opacity: 0.98; }
-      5% { opacity: 0.95; }
-      10% { opacity: 0.99; }
-      50% { opacity: 1; }
-      100% { opacity: 0.98; }
-    }
-
-    .artWrap{
-      width:120px; height:120px;
-      border-radius: 22px;
-      overflow:hidden;
-      border: 2px solid rgba(0,240,255,.65);
-      background: rgba(0,0,0,.45);
-      box-shadow: 0 18px 55px rgba(0,0,0,.35);
-      position:relative;
-      animation: artFlicker .22s infinite;
-      transform: translateZ(0);
-    }
-    .artWrap::after{
-      content:"LIVE";
-      position:absolute; top:8px; right:8px;
-      font-size:7px;
-      padding:6px 8px;
-      border-radius: 999px;
-      background: rgba(255,0,0,.85);
-      border:1px solid rgba(255,255,255,.2);
-      box-shadow: 0 10px 28px rgba(0,0,0,.35);
-    }
-    .artImg{
-      width:100%; height:100%;
-      object-fit: cover;
-      display:block;
-      transform: scale(1.03);
-    }
-
-    .meta{ min-width:0; }
     .title{
       margin:0;
-      font-size:10px;
+      font-size:12px;
       line-height:1.35;
-      color: var(--neon-cyan);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      color: color-mix(in srgb, var(--c1) 85%, white);
+      text-shadow: 0 10px 40px rgba(0,0,0,.35);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
     .artist{
       margin-top:8px;
-      font-size:7px;
-      color: var(--explosive-orange);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      font-size:8px;
+      color: color-mix(in srgb, var(--c2) 75%, white);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
 
-    .statsRow{
-      position:relative; z-index:1;
-      display:flex; justify-content:space-between; gap:10px;
-      margin-top:2px;
-      color: var(--muted2);
-      font-size:7px;
+    .metaRow{
+      margin-top:10px;
+      display:flex; gap:10px; flex-wrap:wrap;
+      font-size:7px; color: var(--muted2);
+      align-items:center;
     }
 
-    /* Progress */
-    .progressWrap{
-      position:relative; z-index:1;
-      margin-top: 2px;
-    }
-    .progressContainer{
-      width:100%;
-      height:14px;
-      background: rgba(255,255,255,.07);
-      border: 1px solid rgba(255,255,255,.14);
+    .chip{
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      padding:8px 10px;
       border-radius:999px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display:inline-flex; gap:8px; align-items:center;
+    }
+    .chip b{ color: rgba(255,255,255,.88); }
+
+    /* Visualizer band (lower part of top) */
+    .vizBand{
+      position:relative;
+      height: 26%;
+      min-height: 110px;
+      border-radius: var(--r1);
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      overflow:hidden;
+    }
+    .vizGlow{
+      position:absolute; inset:-30%;
+      background:
+        radial-gradient(circle at 25% 35%, color-mix(in srgb, var(--c1) 28%, transparent), transparent 58%),
+        radial-gradient(circle at 70% 60%, color-mix(in srgb, var(--c2) 22%, transparent), transparent 60%),
+        radial-gradient(circle at 55% 85%, color-mix(in srgb, var(--c3) 14%, transparent), transparent 62%);
+      filter: blur(22px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    canvas#viz{
+      position:absolute; inset:0;
+      width:100%; height:100%;
+    }
+    .vizMask{
+      position:absolute; inset:0;
+      background: linear-gradient(180deg, rgba(0,0,0,.00), rgba(0,0,0,.20) 55%, rgba(0,0,0,.40));
+      pointer-events:none;
+    }
+
+    /* 1/3 bottom controls */
+    .bottom{
+      flex: 1 1 0;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding-top: 8px;
+    }
+
+    .controlsCard{
+      border-radius: var(--r1);
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      padding: 12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      box-shadow: 0 22px 70px rgba(0,0,0,.45);
+    }
+
+    .artRow{
+      display:flex; align-items:center; gap:12px;
+    }
+    .art{
+      width:54px; height:54px;
+      border-radius: 16px;
+      border: 2px solid color-mix(in srgb, var(--c1) 65%, rgba(255,255,255,.2));
+      overflow:hidden;
+      background: rgba(0,0,0,.35);
+      flex:0 0 auto;
+    }
+    .art img{ width:100%; height:100%; object-fit:cover; display:block; transform:scale(1.02); }
+
+    .miniMeta{ min-width:0; flex:1; }
+    .miniTitle{
+      font-size:9px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      margin:0;
+      color: rgba(255,255,255,.92);
+    }
+    .miniArtist{
+      margin-top:6px;
+      font-size:7px;
+      color: var(--muted);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+
+    .openListHint{
+      font-size:7px;
+      color: var(--muted2);
+      text-align:right;
+      user-select:none;
+    }
+
+    .progressWrap{ display:flex; flex-direction:column; gap:8px; }
+    .timeRow{
+      display:flex; justify-content:space-between;
+      font-size:7px; color: var(--muted2);
+    }
+    .bar{
+      height:14px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
       overflow:hidden;
       cursor:pointer;
       -webkit-tap-highlight-color: transparent;
     }
-    .progressBar{
-      width:0%;
+    .fill{
       height:100%;
-      background: linear-gradient(90deg, var(--hp-green), var(--neon-cyan), var(--explosive-orange));
-      box-shadow: 0 0 18px rgba(57,255,20,.25);
+      width:0%;
+      background: linear-gradient(90deg, var(--c3), var(--c1), var(--c2));
+      box-shadow: 0 0 18px color-mix(in srgb, var(--c1) 25%, transparent);
       transition: width .08s linear;
     }
 
-    /* Controls */
-    .controls{
-      position:relative; z-index:1;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      margin-top: 2px;
-    }
+    .btnRow{ display:flex; gap:10px; }
     .btn{
       flex:1;
       border:none;
-      border-radius: 18px;
+      border-radius: var(--r2);
       padding: 12px 10px;
       cursor:pointer;
       user-select:none;
       -webkit-tap-highlight-color: transparent;
+      font-family:'Press Start 2P', cursive;
+      font-size:10px;
+      color: var(--text);
       background: rgba(255,255,255,.06);
       border: 1px solid rgba(255,255,255,.12);
-      box-shadow: 0 10px 28px rgba(0,0,0,.22);
-      color: var(--text);
-      font-family: 'Press Start 2P', cursive;
-      font-size:10px;
     }
     .btn:active{ transform: translateY(1px); }
 
     .btnPlay{
       flex:2;
-      background: rgba(255,138,0,.18);
-      border: 1px solid rgba(255,138,0,.45);
-      color: #fff;
+      background: color-mix(in srgb, var(--c2) 18%, rgba(255,255,255,.06));
+      border-color: color-mix(in srgb, var(--c2) 55%, rgba(255,255,255,.12));
     }
 
-    .toggles{
-      position:relative; z-index:1;
-      display:flex;
-      gap:10px;
-      margin-top: 0px;
-    }
+    .toggleRow{ display:flex; gap:10px; }
     .toggle{
       flex:1;
+      border-radius: var(--r2);
       padding: 10px 10px;
-      border-radius: 18px;
+      font-family:'Press Start 2P', cursive;
+      font-size:8px;
+      color: var(--muted);
       background: rgba(255,255,255,.05);
       border: 1px solid rgba(255,255,255,.12);
-      color: var(--muted);
-      font-size:8px;
       cursor:pointer;
       user-select:none;
       -webkit-tap-highlight-color: transparent;
-      font-family: 'Press Start 2P', cursive;
     }
     .toggle.on{
-      background: rgba(0,240,255,.18);
-      border-color: rgba(0,240,255,.45);
-      color: rgba(255,255,255,.92);
+      color: rgba(0,0,0,.88);
+      background: linear-gradient(90deg,
+        color-mix(in srgb, var(--c1) 85%, white),
+        color-mix(in srgb, var(--c2) 75%, white)
+      );
+      border-color: rgba(255,255,255,.22);
     }
 
-    /* Search + playlist */
-    .searchBox{
-      position:relative; z-index:1;
+    /* Bottom sheet playlist */
+    .sheet{
+      position:fixed;
+      left:0; right:0;
+      bottom: calc(-72vh + var(--safeBottom));
+      height: 72vh;
+      border-radius: 26px 26px 0 0;
+      background: rgba(12,12,18,.72);
+      border-top: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      box-shadow: 0 -30px 90px rgba(0,0,0,.55);
+      transform: translateY(0);
+      transition: transform .22s ease;
+      z-index: 30;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      touch-action: none;
+    }
+    .sheet.open{ transform: translateY(-72vh); }
+    .sheetHeader{
+      padding: 10px 14px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+    }
+    .handle{
+      width:48px; height:6px;
+      border-radius:999px;
+      background: rgba(255,255,255,.22);
+      margin: 8px auto 10px;
+    }
+    .sheetTopRow{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .sheetTitle{ font-size:9px; color: rgba(255,255,255,.86); }
+    .sheetClose{
+      font-size:8px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      cursor:pointer;
+    }
+    .sheetBody{
+      padding: 12px 14px 14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      min-height:0;
+      overflow:hidden;
+    }
+    .search{
       width:100%;
       padding: 12px 12px;
       border-radius: 18px;
+      border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.12);
-      color: var(--neon-cyan);
+      color: color-mix(in srgb, var(--c1) 70%, white);
+      font-family:'Press Start 2P', cursive;
       font-size:8px;
       outline:none;
-      font-family: 'Press Start 2P', cursive;
-      margin-top: 2px;
     }
-    .searchBox::placeholder{ color: rgba(0,240,255,.35); }
+    .search::placeholder{ color: rgba(255,255,255,.35); }
 
     .list{
-      position:relative; z-index:1;
       min-height:0;
       overflow:auto;
       padding-right: 6px;
       margin-right: -6px;
-      margin-top: 2px;
     }
     .list::-webkit-scrollbar{ width:6px; }
     .list::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.14); border-radius:999px; }
@@ -364,7 +411,7 @@
       gap:12px;
       padding: 12px 12px;
       border-radius: 18px;
-      border: 1px solid rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.04);
       cursor:pointer;
       user-select:none;
@@ -372,26 +419,21 @@
       margin-bottom:10px;
     }
     .item.active{
-      border-color: rgba(57,255,20,.55);
-      box-shadow: 0 18px 55px rgba(57,255,20,.10);
-      background: rgba(57,255,20,.06);
+      border-color: color-mix(in srgb, var(--c3) 55%, rgba(255,255,255,.15));
+      background: color-mix(in srgb, var(--c3) 10%, rgba(255,255,255,.04));
     }
-    .itemLeft{ min-width:0; }
-    .itemTitle{
+    .itLeft{ min-width:0; }
+    .itTitle{
       margin:0;
       font-size:8px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
       color: rgba(255,255,255,.92);
     }
-    .itemArtist{
+    .itArtist{
       margin-top:6px;
       font-size:7px;
       color: var(--muted);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
     .badge{
       font-size:7px;
@@ -402,66 +444,90 @@
       background: rgba(255,255,255,.05);
       flex:0 0 auto;
     }
+
+    .hidden{ display:none !important; }
   </style>
 </head>
 
 <body>
-  <div class="bg"></div>
-  <div class="backdrop" id="backdrop"></div>
+  <div class="bgCover"></div>
+  <div class="coverBlur" id="coverBlur"></div>
   <div class="veil"></div>
 
   <div class="app">
-    <div class="topbar">
-      <div class="brand">
-        <div class="dot"></div>
-        <div style="min-width:0">
-          <div class="t1">BRIGADA_CLOUD_v2.1</div>
-          <div class="t2" id="status">CONNECTING...</div>
+    <div class="top">
+      <div class="topbar">
+        <div class="brand">
+          <div class="dot"></div>
+          <div class="brandText">
+            <div class="brandTitle">BRIGADA PLAYER</div>
+            <div class="brandSub" id="status">CONNECTING...</div>
+          </div>
+        </div>
+        <div class="pill" id="refreshBtn">
+          <span>TRACKS</span><strong id="count">0</strong>
         </div>
       </div>
 
-      <div class="pill" id="refreshBtn" title="Обновить библиотеку">
-        <span>TRACKS</span>
-        <strong id="count">0</strong>
+      <div class="nowArea">
+        <h1 class="title" id="title">TERMINAL_READY</h1>
+        <div class="artist" id="artist">SELECT_TRACK</div>
+
+        <div class="metaRow">
+          <div class="chip"><span>PLAYS</span> <b id="plays">0</b></div>
+          <div class="chip"><span>MODE</span> <b id="mode">NORMAL</b></div>
+          <div class="chip"><span>SHEET</span> <b>SWIPE UP</b></div>
+        </div>
+      </div>
+
+      <div class="vizBand" id="vizBand">
+        <div class="vizGlow"></div>
+        <canvas id="viz"></canvas>
+        <div class="vizMask"></div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="now">
-        <div class="artWrap" id="artWrap">
-          <img class="artImg" id="artImg" src="poster.jpg" alt="cover" />
-        </div>
-
-        <div class="meta">
-          <h2 class="title" id="title">TERMINAL_READY</h2>
-          <div class="artist" id="artist">SELECT_TRACK</div>
-          <div class="statsRow">
-            <div id="timeCur">0:00</div>
-            <div id="playCount">PLAYS: 0</div>
-            <div id="timeDur">0:00</div>
+    <div class="bottom">
+      <div class="controlsCard">
+        <div class="artRow" id="openSheetTap">
+          <div class="art"><img id="artImg" src="poster.jpg" alt="cover"></div>
+          <div class="miniMeta">
+            <p class="miniTitle" id="miniTitle">TERMINAL_READY</p>
+            <div class="miniArtist" id="miniArtist">SELECT_TRACK</div>
           </div>
+          <div class="openListHint">▲ PLAYLIST</div>
+        </div>
+
+        <div class="progressWrap">
+          <div class="bar" id="bar"><div class="fill" id="fill"></div></div>
+          <div class="timeRow"><div id="tCur">0:00</div><div id="tDur">0:00</div></div>
+        </div>
+
+        <div class="btnRow">
+          <button class="btn" id="prev">&lt;</button>
+          <button class="btn btnPlay" id="play">START</button>
+          <button class="btn" id="next">&gt;</button>
+        </div>
+
+        <div class="toggleRow">
+          <button class="toggle" id="shuffle">SHUFFLE: OFF</button>
+          <button class="toggle" id="repeat">REPEAT: OFF</button>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="progressWrap">
-        <div class="progressContainer" id="progressContainer">
-          <div class="progressBar" id="progressBar"></div>
-        </div>
+  <!-- Bottom sheet -->
+  <div class="sheet" id="sheet">
+    <div class="sheetHeader" id="sheetHeader">
+      <div class="handle"></div>
+      <div class="sheetTopRow">
+        <div class="sheetTitle">LIBRARY</div>
+        <button class="sheetClose" id="sheetClose">CLOSE</button>
       </div>
-
-      <div class="controls">
-        <button class="btn" id="prev">&lt;</button>
-        <button class="btn btnPlay" id="play">START</button>
-        <button class="btn" id="next">&gt;</button>
-      </div>
-
-      <div class="toggles">
-        <button class="toggle" id="shuffle">SHUFFLE: OFF</button>
-        <button class="toggle" id="repeat">REPEAT: OFF</button>
-      </div>
-
-      <input class="searchBox" id="search" placeholder="SEARCH_TRACK..." />
-
+    </div>
+    <div class="sheetBody">
+      <input class="search" id="search" placeholder="SEARCH_TRACK..." />
       <div class="list" id="playlist"></div>
     </div>
   </div>
@@ -471,8 +537,7 @@
     // КОНФИГУРАЦИЯ (ФРОНТ)
     // =========================
     const SUPABASE_URL = "https://lrggqgwzalqstwjbgbbn.supabase.co";
-    // ВАЖНО: сюда ТОЛЬКО публичный ключ (anon/publishable). Service role сюда НЕЛЬЗЯ.
-    const SUPABASE_KEY = "sb_publishable_gNPjEKC-lYCueII_lnL-HA_gCKV_BFE";
+    const SUPABASE_KEY = "sb_publishable_gNPjEKC-lYCueII_lnL-HA_gCKV_BFE"; // публичный ключ — ОК
     // =========================
 
     const tg = window.Telegram?.WebApp;
@@ -481,7 +546,6 @@
     const audio = new Audio();
     audio.crossOrigin = "anonymous";
 
-    // State
     let tracks = [];
     let filteredTracks = [];
     let currentTrackIndex = 0;
@@ -489,36 +553,43 @@
     let isRepeat = false;
     let isPlaying = false;
 
-    // Чтобы не спамить plays: инкрементим 1 раз на старт трека
     let lastPlaysTrackId = null;
 
-    const defaultImg = "poster.jpg";
+    const els = {
+      status: document.getElementById("status"),
+      count: document.getElementById("count"),
+      title: document.getElementById("title"),
+      artist: document.getElementById("artist"),
+      plays: document.getElementById("plays"),
+      mode: document.getElementById("mode"),
 
-    // UI
-    const elStatus = document.getElementById("status");
-    const elCount = document.getElementById("count");
-    const elTitle = document.getElementById("title");
-    const elArtist = document.getElementById("artist");
-    const elPlayCount = document.getElementById("playCount");
-    const elTimeCur = document.getElementById("timeCur");
-    const elTimeDur = document.getElementById("timeDur");
+      artImg: document.getElementById("artImg"),
+      miniTitle: document.getElementById("miniTitle"),
+      miniArtist: document.getElementById("miniArtist"),
+      coverBlur: document.getElementById("coverBlur"),
 
-    const elArtImg = document.getElementById("artImg");
-    const elBackdrop = document.getElementById("backdrop");
+      bar: document.getElementById("bar"),
+      fill: document.getElementById("fill"),
+      tCur: document.getElementById("tCur"),
+      tDur: document.getElementById("tDur"),
 
-    const elPlaylist = document.getElementById("playlist");
-    const elSearch = document.getElementById("search");
+      prev: document.getElementById("prev"),
+      play: document.getElementById("play"),
+      next: document.getElementById("next"),
+      shuffle: document.getElementById("shuffle"),
+      repeat: document.getElementById("repeat"),
+      refresh: document.getElementById("refreshBtn"),
 
-    const btnPrev = document.getElementById("prev");
-    const btnPlay = document.getElementById("play");
-    const btnNext = document.getElementById("next");
+      sheet: document.getElementById("sheet"),
+      sheetHeader: document.getElementById("sheetHeader"),
+      sheetClose: document.getElementById("sheetClose"),
+      openSheetTap: document.getElementById("openSheetTap"),
+      search: document.getElementById("search"),
+      playlist: document.getElementById("playlist"),
 
-    const btnShuffle = document.getElementById("shuffle");
-    const btnRepeat = document.getElementById("repeat");
-    const btnRefresh = document.getElementById("refreshBtn");
-
-    const elProgressContainer = document.getElementById("progressContainer");
-    const elProgressBar = document.getElementById("progressBar");
+      viz: document.getElementById("viz"),
+      vizBand: document.getElementById("vizBand"),
+    };
 
     function haptic(type="medium"){
       try { tg?.HapticFeedback?.impactOccurred(type); } catch(e){}
@@ -532,40 +603,93 @@
       return `${m}:${String(s).padStart(2,"0")}`;
     }
 
-    function setArt(url){
-      const finalUrl = (url && String(url).trim()) ? url : defaultImg;
-      elArtImg.src = finalUrl;
+    // ----------------------------
+    // COLORS FROM COVER (fast)
+    // ----------------------------
+    async function extractColorsFromImage(imgEl){
+      // простая выборка: берём несколько пикселей с уменьшенной картинки
+      try{
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = imgEl.src;
+        await img.decode();
 
-      if (finalUrl !== defaultImg){
-        elBackdrop.style.backgroundImage = `url('${finalUrl}')`;
-        elBackdrop.classList.add("on");
-      } else {
-        elBackdrop.classList.remove("on");
+        const c = document.createElement("canvas");
+        const ctx = c.getContext("2d", { willReadFrequently: true });
+        const w = 32, h = 32;
+        c.width = w; c.height = h;
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const data = ctx.getImageData(0,0,w,h).data;
+        const samples = [];
+        for (let i=0; i<data.length; i+=4*8){
+          const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
+          if (a < 200) continue;
+          // игнор очень тёмные
+          if (r+g+b < 60) continue;
+          samples.push([r,g,b]);
+        }
+        if (samples.length < 6) return;
+
+        // выберем 3 "разнесённых" цвета
+        const pick = (base=null) => {
+          let best=null, bestD=-1;
+          for (const s of samples){
+            const d = base ? (Math.abs(s[0]-base[0])+Math.abs(s[1]-base[1])+Math.abs(s[2]-base[2])) : (s[0]+s[1]+s[2]);
+            if (d > bestD){ bestD=d; best=s; }
+          }
+          return best;
+        };
+        const c1 = pick(null);
+        const c2 = pick(c1);
+        const c3 = pick(c2);
+
+        setCssColors(c1,c2,c3);
+      } catch(e){
+        // ignore
       }
     }
 
+    function setCssColors(a,b,c){
+      const to = (x)=>`rgb(${x[0]},${x[1]},${x[2]})`;
+      document.documentElement.style.setProperty("--c1", to(a));
+      document.documentElement.style.setProperty("--c2", to(b));
+      document.documentElement.style.setProperty("--c3", to(c));
+    }
+
+    function setCover(url){
+      const u = (url && String(url).trim()) ? url : "poster.jpg";
+      els.artImg.src = u;
+      els.coverBlur.style.backgroundImage = `url('${u}')`;
+      if (u !== "poster.jpg") els.coverBlur.classList.add("on");
+      else els.coverBlur.classList.remove("on");
+
+      // после установки обложки — обновим динамические цвета
+      setTimeout(()=>extractColorsFromImage(els.artImg), 50);
+    }
+
     function tryReadCoverFromMp3(audioUrl){
-      // Может не сработать из-за CORS — это нормально.
+      // может не сработать из-за CORS — это ок
       try{
         new window.jsmediatags.Reader(audioUrl).read({
           onSuccess: function(tag){
             const image = tag?.tags?.picture;
             if (!image) return;
-
             let base64String = "";
-            for (let i=0; i<image.data.length; i++){
-              base64String += String.fromCharCode(image.data[i]);
-            }
+            for (let i=0;i<image.data.length;i++) base64String += String.fromCharCode(image.data[i]);
             const dataUrl = `data:${image.format};base64,${window.btoa(base64String)}`;
-            setArt(dataUrl);
+            setCover(dataUrl);
           },
           onError: function(){ /* ignore */ }
         });
       } catch(e){ /* ignore */ }
     }
 
+    // ----------------------------
+    // SUPABASE REST
+    // ----------------------------
     async function fetchTracks(){
-      elStatus.textContent = "LOADING_TRACKS...";
+      els.status.textContent = "LOADING_TRACKS...";
       try{
         const response = await fetch(`${SUPABASE_URL}/rest/v1/tracks?select=*&order=id.asc`, {
           headers: {
@@ -573,34 +697,39 @@
             "Authorization": `Bearer ${SUPABASE_KEY}`
           }
         });
-
-        if (!response.ok) throw new Error("REST_ERROR_" + response.status);
+        if (!response.ok) throw new Error("REST_" + response.status);
 
         tracks = await response.json();
         filteredTracks = tracks;
 
-        elCount.textContent = String(tracks.length);
-        elStatus.textContent = tracks.length ? "READY" : "EMPTY_LIBRARY";
+        els.count.textContent = String(tracks.length);
+        els.status.textContent = tracks.length ? "READY" : "EMPTY_LIBRARY";
 
         renderPlaylist();
 
-        if (tracks.length > 0){
-          loadTrack(0, { autoplay: false });
+        if (tracks.length){
+          loadTrack(0, { autoplay:false });
         } else {
-          elTitle.textContent = "NO_TRACKS";
-          elArtist.textContent = "UPLOAD_MP3_TO_STORAGE";
-          elPlayCount.textContent = "PLAYS: 0";
-          setArt(defaultImg);
+          setEmpty();
         }
       } catch(e){
-        elStatus.textContent = "CONN_ERROR";
-        elTitle.textContent = "CONN_ERROR";
-        elArtist.textContent = "CHECK_KEY_OR_RLS";
+        els.status.textContent = "CONN_ERROR";
+        els.title.textContent = "CONN_ERROR";
+        els.artist.textContent = "CHECK_KEY_OR_RLS";
       }
     }
 
+    function setEmpty(){
+      els.title.textContent = "NO_TRACKS";
+      els.artist.textContent = "UPLOAD_MP3_TO_STORAGE";
+      els.miniTitle.textContent = "NO_TRACKS";
+      els.miniArtist.textContent = "UPLOAD_MP3";
+      els.plays.textContent = "0";
+      setCover("poster.jpg");
+    }
+
     function renderPlaylist(){
-      elPlaylist.innerHTML = "";
+      els.playlist.innerHTML = "";
 
       filteredTracks.forEach((track) => {
         const realIndex = tracks.findIndex(t => t.id === track.id);
@@ -611,14 +740,14 @@
         item.dataset.index = String(realIndex);
 
         const left = document.createElement("div");
-        left.className = "itemLeft";
+        left.className = "itLeft";
 
         const t = document.createElement("p");
-        t.className = "itemTitle";
+        t.className = "itTitle";
         t.textContent = `[${String(realIndex+1).padStart(2,"0")}] ${track.title || "UNTITLED"}`;
 
         const a = document.createElement("div");
-        a.className = "itemArtist";
+        a.className = "itArtist";
         a.textContent = track.artist || "UNKNOWN_ARTIST";
 
         left.appendChild(t);
@@ -633,18 +762,19 @@
 
         item.onclick = () => {
           currentTrackIndex = realIndex;
-          loadTrack(realIndex, { autoplay: true });
+          loadTrack(realIndex, { autoplay:true });
+          closeSheet();
           haptic("medium");
         };
 
-        elPlaylist.appendChild(item);
+        els.playlist.appendChild(item);
       });
 
       updateActiveItem();
     }
 
     function updateActiveItem(){
-      const items = elPlaylist.querySelectorAll(".item");
+      const items = els.playlist.querySelectorAll(".item");
       items.forEach((item) => {
         const i = Number(item.dataset.index);
         item.classList.toggle("active", i === currentTrackIndex);
@@ -652,52 +782,49 @@
     }
 
     function setPlayBtn(){
-      btnPlay.textContent = audio.paused ? "START" : "STOP";
+      els.play.textContent = audio.paused ? "START" : "STOP";
     }
 
     function loadTrack(index, { autoplay=false } = {}){
       const track = tracks[index];
       if (!track) return;
 
-      elTitle.textContent = track.title || "UNTITLED";
-      elArtist.textContent = track.artist || "UNKNOWN_ARTIST";
-      elPlayCount.textContent = `PLAYS: ${track.plays || 0}`;
+      els.title.textContent = track.title || "UNTITLED";
+      els.artist.textContent = track.artist || "UNKNOWN_ARTIST";
+      els.miniTitle.textContent = track.title || "UNTITLED";
+      els.miniArtist.textContent = track.artist || "UNKNOWN_ARTIST";
+
+      const plays = track.plays || 0;
+      els.plays.textContent = String(plays);
 
       audio.src = track.audio_url;
       audio.loop = isRepeat;
 
-      // Сброс защиты plays для нового трека
       lastPlaysTrackId = null;
+      els.mode.textContent = isShuffle ? "SHUFFLE" : "NORMAL";
 
-      // Обложка
-      setArt(defaultImg);
-
-      if (track.image_url && track.image_url !== "NULL" && track.image_url.trim() !== ""){
-        setArt(track.image_url);
+      // cover
+      setCover("poster.jpg");
+      if (track.image_url && track.image_url !== "NULL" && String(track.image_url).trim() !== ""){
+        setCover(track.image_url);
       } else {
-        // пробуем вытащить ID3 cover
         tryReadCoverFromMp3(track.audio_url);
       }
 
       updateActiveItem();
       setPlayBtn();
 
-      if (autoplay){
-        playAudio();
-      }
+      if (autoplay) playAudio();
     }
 
     async function updatePlayCount(track){
       const newCount = (track.plays || 0) + 1;
       track.plays = newCount;
+      els.plays.textContent = String(newCount);
 
-      elPlayCount.textContent = `PLAYS: ${newCount}`;
+      const badge = els.playlist.querySelector(`.item[data-index="${currentTrackIndex}"] .badge`);
+      if (badge) badge.textContent = `PLAYS:${newCount}`;
 
-      // обновим бейдж в списке
-      const item = elPlaylist.querySelector(`.item[data-index="${currentTrackIndex}"] .badge`);
-      if (item) item.textContent = `PLAYS:${newCount}`;
-
-      // PATCH в базу
       try{
         await fetch(`${SUPABASE_URL}/rest/v1/tracks?id=eq.${track.id}`, {
           method: "PATCH",
@@ -708,9 +835,7 @@
           },
           body: JSON.stringify({ plays: newCount })
         });
-      } catch(e){
-        // ignore
-      }
+      } catch(e){ /* ignore */ }
     }
 
     async function playAudio(){
@@ -722,13 +847,13 @@
         isPlaying = true;
         setPlayBtn();
 
-        // plays инкрементим 1 раз на запуск текущего трека
         if (lastPlaysTrackId !== track.id){
           lastPlaysTrackId = track.id;
           updatePlayCount(track);
         }
+
+        startViz(); // включаем визуализацию
       } catch(e){
-        // Автовоспроизведение может блокироваться — пользователь нажмёт ещё раз
         isPlaying = false;
         setPlayBtn();
       }
@@ -742,92 +867,271 @@
 
     function nextTrack(){
       if (!tracks.length) return;
-
-      if (isShuffle){
-        currentTrackIndex = Math.floor(Math.random() * tracks.length);
-      } else {
-        currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
-      }
-
-      loadTrack(currentTrackIndex, { autoplay: isPlaying }); // если был стоп — не стартуем
+      if (isShuffle) currentTrackIndex = Math.floor(Math.random() * tracks.length);
+      else currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+      loadTrack(currentTrackIndex, { autoplay: isPlaying });
+      if (isPlaying) playAudio();
     }
 
     function prevTrack(){
       if (!tracks.length) return;
-
       currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
       loadTrack(currentTrackIndex, { autoplay: isPlaying });
+      if (isPlaying) playAudio();
     }
 
-    // UI handlers
-    btnPlay.onclick = () => {
+    // ----------------------------
+    // Bottom sheet (swipe up)
+    // ----------------------------
+    let sheetOpen = false;
+
+    function openSheet(){
+      sheetOpen = true;
+      els.sheet.classList.add("open");
+      haptic("light");
+    }
+    function closeSheet(){
+      sheetOpen = false;
+      els.sheet.classList.remove("open");
+      haptic("light");
+    }
+    function toggleSheet(){
+      sheetOpen ? closeSheet() : openSheet();
+    }
+
+    // Tap to open sheet
+    els.openSheetTap.onclick = () => openSheet();
+    els.sheetClose.onclick = () => closeSheet();
+
+    // Swipe logic
+    let startY = 0, curY = 0, dragging = false;
+
+    function onStart(y){
+      dragging = true;
+      startY = y;
+      curY = y;
+    }
+    function onMove(y){
+      if (!dragging) return;
+      curY = y;
+      const dy = curY - startY;
+
+      // dy < 0 => swipe up
+      // dy > 0 => swipe down
+      // делаем небольшой визуальный отклик без сложной физики
+      if (!sheetOpen && dy < -30){
+        openSheet();
+        dragging = false;
+      } else if (sheetOpen && dy > 40){
+        closeSheet();
+        dragging = false;
+      }
+    }
+    function onEnd(){
+      dragging = false;
+    }
+
+    // Только по header (чтобы скролл списка не ломать)
+    els.sheetHeader.addEventListener("touchstart", (e)=>onStart(e.touches[0].clientY), { passive:true });
+    els.sheetHeader.addEventListener("touchmove", (e)=>onMove(e.touches[0].clientY), { passive:true });
+    els.sheetHeader.addEventListener("touchend", onEnd);
+
+    // На vizBand (свайп вверх) тоже открываем
+    els.vizBand.addEventListener("touchstart", (e)=>onStart(e.touches[0].clientY), { passive:true });
+    els.vizBand.addEventListener("touchmove", (e)=>onMove(e.touches[0].clientY), { passive:true });
+    els.vizBand.addEventListener("touchend", onEnd);
+
+    // ----------------------------
+    // Search
+    // ----------------------------
+    els.search.oninput = (e) => {
+      const val = (e.target.value || "").toLowerCase().trim();
+      if (!val) filteredTracks = tracks;
+      else filteredTracks = tracks.filter(t =>
+        String(t.title || "").toLowerCase().includes(val) ||
+        String(t.artist || "").toLowerCase().includes(val)
+      );
+      renderPlaylist();
+    };
+
+    // ----------------------------
+    // Controls
+    // ----------------------------
+    els.play.onclick = () => {
       if (audio.paused) playAudio(); else stopAudio();
       haptic("medium");
     };
+    els.next.onclick = () => { nextTrack(); haptic("light"); };
+    els.prev.onclick = () => { prevTrack(); haptic("light"); };
 
-    btnNext.onclick = () => { nextTrack(); haptic("light"); };
-    btnPrev.onclick = () => { prevTrack(); haptic("light"); };
-
-    btnShuffle.onclick = () => {
+    els.shuffle.onclick = () => {
       isShuffle = !isShuffle;
-      btnShuffle.textContent = isShuffle ? "SHUFFLE: ON" : "SHUFFLE: OFF";
-      btnShuffle.classList.toggle("on", isShuffle);
+      els.shuffle.textContent = isShuffle ? "SHUFFLE: ON" : "SHUFFLE: OFF";
+      els.shuffle.classList.toggle("on", isShuffle);
+      els.mode.textContent = isShuffle ? "SHUFFLE" : "NORMAL";
       haptic("light");
     };
 
-    btnRepeat.onclick = () => {
+    els.repeat.onclick = () => {
       isRepeat = !isRepeat;
-      btnRepeat.textContent = isRepeat ? "REPEAT: ON" : "REPEAT: OFF";
-      btnRepeat.classList.toggle("on", isRepeat);
+      els.repeat.textContent = isRepeat ? "REPEAT: ON" : "REPEAT: OFF";
+      els.repeat.classList.toggle("on", isRepeat);
       audio.loop = isRepeat;
       haptic("light");
     };
 
-    btnRefresh.onclick = () => {
+    els.refresh.onclick = () => {
       haptic("light");
       fetchTracks();
-    };
-
-    // Search
-    elSearch.oninput = (e) => {
-      const val = (e.target.value || "").toLowerCase().trim();
-      if (!val){
-        filteredTracks = tracks;
-      } else {
-        filteredTracks = tracks.filter(t =>
-          String(t.title || "").toLowerCase().includes(val) ||
-          String(t.artist || "").toLowerCase().includes(val)
-        );
-      }
-      renderPlaylist();
     };
 
     // Progress
     audio.ontimeupdate = () => {
       if (!audio.duration) return;
       const pct = (audio.currentTime / audio.duration) * 100;
-      elProgressBar.style.width = pct + "%";
-      elTimeCur.textContent = formatTime(audio.currentTime);
-      elTimeDur.textContent = formatTime(audio.duration);
+      els.fill.style.width = pct + "%";
+      els.tCur.textContent = formatTime(audio.currentTime);
+      els.tDur.textContent = formatTime(audio.duration);
     };
 
     audio.onended = () => {
-      if (!isRepeat){
-        nextTrack();
-        // если играло — продолжаем
-        if (isPlaying) playAudio();
-      }
+      if (!isRepeat) nextTrack();
     };
 
-    elProgressContainer.onclick = (e) => {
+    els.bar.onclick = (e) => {
       if (!audio.duration) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = Math.min(Math.max(0, e.clientX - rect.left), rect.width);
-      audio.currentTime = (x / rect.width) * audio.duration;
+      const r = els.bar.getBoundingClientRect();
+      const x = Math.min(Math.max(0, e.clientX - r.left), r.width);
+      audio.currentTime = (x / r.width) * audio.duration;
       haptic("light");
     };
 
+    // ----------------------------
+    // Visualizer (structures)
+    // ----------------------------
+    let audioCtx = null, analyser = null, srcNode = null;
+    let raf = null;
+    const ctx2d = els.viz.getContext("2d");
+
+    function resizeViz(){
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const rect = els.viz.getBoundingClientRect();
+      els.viz.width = Math.floor(rect.width * dpr);
+      els.viz.height = Math.floor(rect.height * dpr);
+      ctx2d.setTransform(dpr,0,0,dpr,0,0);
+    }
+    window.addEventListener("resize", resizeViz);
+    setTimeout(resizeViz, 0);
+
+    function ensureAudioGraph(){
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.82;
+
+      srcNode = audioCtx.createMediaElementSource(audio);
+      srcNode.connect(analyser);
+      analyser.connect(audioCtx.destination);
+    }
+
+    function startViz(){
+      try{
+        ensureAudioGraph();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+      } catch(e){ return; }
+
+      if (raf) return;
+
+      const buf = new Uint8Array(analyser.frequencyBinCount);
+
+      const draw = () => {
+        raf = requestAnimationFrame(draw);
+
+        const w = els.viz.clientWidth;
+        const h = els.viz.clientHeight;
+
+        ctx2d.clearRect(0,0,w,h);
+
+        analyser.getByteFrequencyData(buf);
+
+        // структура: несколько "потоков" + барчики
+        const bars = 48;
+        const step = Math.floor(buf.length / bars);
+        const midY = h * 0.62;
+
+        // glow lines
+        ctx2d.globalAlpha = 0.85;
+
+        // волнообразная линия
+        ctx2d.beginPath();
+        for (let i=0; i<bars; i++){
+          const v = buf[i*step] / 255;
+          const x = (i/(bars-1)) * w;
+          const y = midY - v * (h*0.42);
+          if (i === 0) ctx2d.moveTo(x,y);
+          else ctx2d.lineTo(x,y);
+        }
+        ctx2d.strokeStyle = "rgba(255,255,255,.18)";
+        ctx2d.lineWidth = 2;
+        ctx2d.stroke();
+
+        // bars glass
+        const barW = w / bars;
+        for (let i=0; i<bars; i++){
+          const v = buf[i*step] / 255;
+          const bh = Math.max(2, v * (h*0.72));
+          const x = i*barW + barW*0.15;
+          const y = h - bh;
+
+          // base
+          ctx2d.fillStyle = "rgba(255,255,255,.10)";
+          roundRect(ctx2d, x, y, barW*0.7, bh, 8);
+          ctx2d.fill();
+
+          // inner highlight
+          ctx2d.fillStyle = "rgba(255,255,255,.08)";
+          roundRect(ctx2d, x+1, y+1, barW*0.7-2, Math.max(2,bh*0.55), 8);
+          ctx2d.fill();
+        }
+
+        // bottom fade
+        const g = ctx2d.createLinearGradient(0, h*0.35, 0, h);
+        g.addColorStop(0, "rgba(0,0,0,0)");
+        g.addColorStop(1, "rgba(0,0,0,.35)");
+        ctx2d.fillStyle = g;
+        ctx2d.fillRect(0,0,w,h);
+
+        ctx2d.globalAlpha = 1;
+      };
+
+      draw();
+    }
+
+    function stopViz(){
+      if (raf){
+        cancelAnimationFrame(raf);
+        raf = null;
+      }
+    }
+
+    function roundRect(ctx, x, y, w, h, r){
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x+rr,y);
+      ctx.arcTo(x+w,y,x+w,y+h,rr);
+      ctx.arcTo(x+w,y+h,x,y+h,rr);
+      ctx.arcTo(x,y+h,x,y,rr);
+      ctx.arcTo(x,y,x+w,y,rr);
+      ctx.closePath();
+    }
+
+    audio.addEventListener("pause", ()=>{ stopViz(); });
+    audio.addEventListener("ended", ()=>{ stopViz(); });
+
+    // ----------------------------
     // Init
+    // ----------------------------
     fetchTracks();
   </script>
 </body>
